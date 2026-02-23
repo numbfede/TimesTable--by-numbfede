@@ -194,11 +194,13 @@ struct GradientText: View {
 struct ThemeBackground: View {
     @Environment(ThemeManager.self) private var themeManager
     @Environment(\.colorScheme) private var colorScheme
+    
+    var ignoreImage: Bool = false
 
     var body: some View {
         Group {
             if themeManager.themeMode == .custom {
-                if themeManager.hasCustomBackgroundImage, let data = themeManager.backgroundImageData {
+                if !ignoreImage && themeManager.hasCustomBackgroundImage, let data = themeManager.backgroundImageData {
 #if os(iOS)
                     if let uiImage = UIImage(data: data) {
                         Image(uiImage: uiImage)
@@ -232,7 +234,7 @@ struct ThemeBackground: View {
 // MARK: - View Extension for Background
 
 extension View {
-    func themeBackground() -> some View {
-        self.background(ThemeBackground())
+    func themeBackground(ignoreImage: Bool = false) -> some View {
+        self.background(ThemeBackground(ignoreImage: ignoreImage))
     }
 }

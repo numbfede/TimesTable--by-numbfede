@@ -192,6 +192,7 @@ struct TaskListView: View {
         }
         .themeBackground()
         .listStyle(.plain)
+        .scrollContentBackground(.hidden)
     }
 
     // MARK: - Empty State

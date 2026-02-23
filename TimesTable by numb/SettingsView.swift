@@ -504,6 +504,10 @@ struct SettingsView: View {
                 Text("This will permanently delete all classes and tasks.")
             }
         }
+        .scrollContentBackground(.hidden)
+        .themeBackground(ignoreImage: true)
+        .listRowBackground(themeManager.themeMode == .custom ? themeManager.customButtonColor : Color(uiColor: .secondarySystemGroupedBackground))
+        .foregroundStyle(themeManager.themeMode == .custom ? themeManager.customIconColor : .primary)
         .navigationTitle("Settings")
         .sheet(isPresented: $showingExportSheet) {
             if let url = exportURL {
