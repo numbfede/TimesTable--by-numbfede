@@ -40,11 +40,24 @@ struct TimesTableApp: App {
         }
     }()
 
+    @State private var themeManager = ThemeManager.shared
+
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .tint(themeManager.accentColor)
+                .preferredColorScheme(colorScheme)
+                .environment(themeManager)
         }
         .modelContainer(sharedModelContainer)
+    }
+
+    private var colorScheme: ColorScheme? {
+        switch themeManager.themeMode {
+        case .light: return .light
+        case .dark, .custom: return .dark
+        case .system: return nil
+        }
     }
 }
 

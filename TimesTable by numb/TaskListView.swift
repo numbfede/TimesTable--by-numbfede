@@ -4,15 +4,29 @@ import SwiftData
 struct TaskListView: View {
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \StudyTask.dueDate) private var tasks: [StudyTask]
+    @AppStorage("averageType") private var averageTypeRaw = AverageType.arithmetic.rawValue
+    @AppStorage("gradeRangeMax") private var gradeRangeMax = 10
     @State private var showingAddTask = false
 
     // Grade input state
     @State private var taskToGrade: StudyTask?
     @State private var gradeInput = ""
+    @State private var weightInput = ""
     @State private var showingGradeAlert = false
+
+    private var averageType: AverageType {
+        AverageType(rawValue: averageTypeRaw) ?? .arithmetic
+    }
 
     private var pendingTasks: [StudyTask] { tasks.filter { !$0.isCompleted } }
     private var completedTasks: [StudyTask] { tasks.filter { $0.isCompleted } }
+
+    private var maxAllowedWeight: Double {
+        guard let task = taskToGrade else { return 100.0 }
+        let otherTasks = tasks.filter { $0.id != task.id && $0.subjectName == task.subjectName && $0.isCompleted && $0.gradeWeight != nil }
+        let currentSum = otherTasks.compactMap { $0.gradeWeight }.reduce(0, +)
+        return max(0.0, 100.0 - currentSum)
+    }
 
     var body: some View {
         Group {
@@ -50,27 +64,45 @@ struct TaskListView: View {
 #if os(iOS)
                 .keyboardType(.decimalPad)
 #endif
+            if averageType.needsWeight {
+                TextField("Weight % (max \(Int(maxAllowedWeight.rounded())))", text: $weightInput)
+#if os(iOS)
+                    .keyboardType(.decimalPad)
+#endif
+            }
             Button("Save") {
                 if let task = taskToGrade {
                     if let grade = Double(gradeInput.replacingOccurrences(of: ",", with: ".")) {
-                        task.grade = grade
+                        let clamped = min(max(grade, 1.0), Double(gradeRangeMax))
+                        task.grade = clamped
+                    }
+                    if averageType.needsWeight,
+                       let weight = Double(weightInput.replacingOccurrences(of: ",", with: ".")) {
+                        task.gradeWeight = min(max(weight, 0.0), maxAllowedWeight)
                     }
                     task.isCompleted = true
                 }
                 gradeInput = ""
+                weightInput = ""
                 taskToGrade = nil
             }
             Button("Skip") {
                 taskToGrade?.isCompleted = true
                 gradeInput = ""
+                weightInput = ""
                 taskToGrade = nil
             }
             Button("Cancel", role: .cancel) {
                 gradeInput = ""
+                weightInput = ""
                 taskToGrade = nil
             }
         } message: {
-            Text("Would you like to record a grade for this task?")
+            if averageType.needsWeight {
+                Text("Enter the grade and its weight (percentage) for this task.")
+            } else {
+                Text("Would you like to record a grade for this task?")
+            }
         }
     }
 
@@ -81,10 +113,12 @@ struct TaskListView: View {
             // Uncompleting — just toggle
             withAnimation(AppTheme.bouncy) { task.isCompleted = false }
             task.grade = nil
+            task.gradeWeight = nil
         } else {
             // Show grade input alert
             taskToGrade = task
             gradeInput = ""
+            weightInput = ""
             showingGradeAlert = true
 #if os(iOS)
             Haptic.success()
@@ -156,9 +190,8 @@ struct TaskListView: View {
                 }
             }
         }
-#if os(iOS)
-        .listStyle(.insetGrouped)
-#endif
+        .themeBackground()
+        .listStyle(.plain)
     }
 
     // MARK: - Empty State
@@ -192,6 +225,7 @@ struct TaskListView: View {
 struct TaskRow: View {
     @Bindable var task: StudyTask
     @AppStorage("gradeRangeMax") private var gradeRangeMax = 10
+    @Environment(ThemeManager.self) private var themeManager
     var onToggle: () -> Void
 
     var body: some View {
@@ -239,9 +273,16 @@ struct TaskRow: View {
 
             VStack(alignment: .trailing, spacing: 2) {
                 if let grade = task.grade {
-                    Text(String(format: "%.1f", grade))
-                        .font(.subheadline.bold().monospacedDigit())
-                        .foregroundStyle(gradeColor(grade))
+                    HStack(spacing: 4) {
+                        Text(String(format: "%.1f", grade))
+                            .font(.subheadline.bold().monospacedDigit())
+                            .foregroundStyle(gradeColor(grade))
+                        if let weight = task.gradeWeight {
+                            Text("(\(Int(weight))%)")
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
                 }
                 RoundedRectangle(cornerRadius: 2)
                     .fill(task.color.opacity(0.6))
@@ -252,7 +293,7 @@ struct TaskRow: View {
         .padding(.horizontal, 4)
         .background(
             RoundedRectangle(cornerRadius: 12)
-                .fill(task.color.opacity(task.isCompleted ? 0.02 : 0.05))
+                .fill(themeManager.themeMode == .custom ? themeManager.customButtonColor : task.color.opacity(task.isCompleted ? 0.02 : 0.05))
         )
     }
 

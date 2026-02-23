@@ -8,6 +8,8 @@ struct WeekGridView: View {
     @AppStorage("repeatingWeeksEnabled") private var repeatingWeeksEnabled = false
     @State private var selectedWeek: Int = 1
 
+    @Environment(ThemeManager.self) private var themeManager
+
     private var days: [(Int, String)] {
         let short = Calendar.current.shortWeekdaySymbols
         let all: [(Int, String)] = (1...7).map { tag in
@@ -44,6 +46,7 @@ struct WeekGridView: View {
             }
             gridContent
         }
+        .themeBackground()
         .navigationTitle("Week View")
         .onAppear {
             if repeatingWeeksEnabled && numberOfWeeks > 1 {
@@ -67,7 +70,7 @@ struct WeekGridView: View {
                             .background(
                                 selectedWeek == week
                                     ? AnyShapeStyle(LinearGradient(
-                                        colors: [Color(hex: "#0A84FF") ?? .blue, Color(hex: "#5E5CE6") ?? .indigo],
+                                        colors: [themeManager.accentColor, themeManager.accentColor.opacity(0.8)],
                                         startPoint: .leading, endPoint: .trailing
                                       ))
                                     : AnyShapeStyle(Color.secondary.opacity(0.1))
@@ -87,17 +90,7 @@ struct WeekGridView: View {
         ScrollView([.horizontal, .vertical]) {
             HStack(alignment: .top, spacing: 0) {
                 // Time column
-                VStack(alignment: .trailing, spacing: 0) {
-                    Color.clear.frame(height: 40) // header spacer
-                    ForEach(Int(startHour)...Int(endHour - 1), id: \.self) { hour in
-                        Text(String(format: "%02d:00", hour))
-                            .font(.caption2.monospacedDigit())
-                            .foregroundStyle(.tertiary)
-                            .frame(height: hourHeight, alignment: .top)
-                            .padding(.trailing, 6)
-                    }
-                }
-                .frame(width: 48)
+                timeColumn
 
                 // Day columns
                 ForEach(days, id: \.0) { dayIndex, dayName in
@@ -105,31 +98,15 @@ struct WeekGridView: View {
 
                     VStack(spacing: 0) {
                         // Day header
-                        VStack(spacing: 2) {
-                            Text(dayName)
-                                .font(.caption.bold())
-                            if isToday {
-                                Circle()
-                                    .fill(Color(hex: "#0A84FF") ?? .blue)
-                                    .frame(width: 5, height: 5)
-                            }
-                        }
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 40)
-                        .background(
-                            isToday
-                                ? AnyShapeStyle(LinearGradient(
-                                    colors: [(Color(hex: "#0A84FF") ?? .blue).opacity(0.15), .clear],
-                                    startPoint: .top, endPoint: .bottom))
-                                : AnyShapeStyle(Color.secondary.opacity(0.06))
-                        )
+                        dayHeader(name: dayName, isToday: isToday)
 
                         // Grid body
                         ZStack(alignment: .topLeading) {
                             // Hour lines
                             VStack(spacing: 0) {
                                 ForEach(Int(startHour)...Int(endHour - 1), id: \.self) { _ in
-                                    Divider().opacity(0.3)
+                                    Divider()
+                                        .background(themeManager.themeMode == .custom ? themeManager.customIconColor.opacity(0.3) : .primary.opacity(0.3))
                                     Spacer().frame(height: hourHeight - 0.5)
                                 }
                             }
@@ -138,7 +115,7 @@ struct WeekGridView: View {
                             // Today column tint
                             if isToday {
                                 Rectangle()
-                                    .fill((Color(hex: "#0A84FF") ?? .blue).opacity(0.03))
+                                    .fill(themeManager.accentColor.opacity(0.03))
                                     .frame(height: totalHeight)
                             }
 
@@ -156,9 +133,26 @@ struct WeekGridView: View {
                             }
 
                             // Class blocks
-                            ForEach(classes.filter {
-                                $0.dayOfWeek == dayIndex && (numberOfWeeks <= 1 || $0.weekIndex == selectedWeek)
-                            }) { sc in
+                            let dayClasses = classes.filter { sc in
+                                sc.dayOfWeek == dayIndex && (numberOfWeeks <= 1 || sc.weekIndex == selectedWeek)
+                            }.sorted { a, b in
+                                let cal = Calendar.current
+                                let aComp = cal.dateComponents([.hour, .minute], from: a.startTime)
+                                let bComp = cal.dateComponents([.hour, .minute], from: b.startTime)
+                                
+                                let aTime = (aComp.hour ?? 0) * 60 + (aComp.minute ?? 0)
+                                let bTime = (bComp.hour ?? 0) * 60 + (bComp.minute ?? 0)
+                                
+                                if aTime != bTime {
+                                    return aTime < bTime
+                                } else {
+                                    let aEnd = cal.dateComponents([.hour, .minute], from: a.endTime)
+                                    let bEnd = cal.dateComponents([.hour, .minute], from: b.endTime)
+                                    return ((aEnd.hour ?? 0) * 60 + (aEnd.minute ?? 0)) < ((bEnd.hour ?? 0) * 60 + (bEnd.minute ?? 0))
+                                }
+                            }
+
+                            ForEach(dayClasses) { sc in
                                 ClassBlock(schoolClass: sc, startHour: startHour, hourHeight: hourHeight)
                             }
                         }
@@ -166,10 +160,50 @@ struct WeekGridView: View {
                     }
                     .frame(width: 130)
 
-                    Divider().opacity(0.2)
+                    Divider()
+                        .background(themeManager.themeMode == .custom ? themeManager.customIconColor.opacity(0.2) : .primary.opacity(0.2))
                 }
             }
         }
+    }
+    
+    // MARK: - Subcomponents
+    
+    private var timeColumn: some View {
+        VStack(alignment: .trailing, spacing: 0) {
+            Color.clear.frame(height: 40) // header spacer
+            ForEach(Int(startHour)...Int(endHour - 1), id: \.self) { hour in
+                Text(String(format: "%02d:00", hour))
+                    .font(.caption2.monospacedDigit())
+                    .foregroundStyle(themeManager.themeMode == .custom ? AnyShapeStyle(themeManager.customIconColor.opacity(0.7)) : AnyShapeStyle(.tertiary))
+                    .frame(height: hourHeight, alignment: .top)
+                    .padding(.trailing, 6)
+            }
+        }
+        .frame(width: 48)
+    }
+    
+    @ViewBuilder
+    private func dayHeader(name: String, isToday: Bool) -> some View {
+        VStack(spacing: 2) {
+            Text(name)
+                .font(.caption.bold())
+                .foregroundStyle(themeManager.themeMode == .custom ? themeManager.customIconColor : .primary)
+            if isToday {
+                Circle()
+                    .fill(themeManager.accentColor)
+                    .frame(width: 5, height: 5)
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .frame(height: 40)
+        .background(
+            isToday
+                ? AnyShapeStyle(LinearGradient(
+                    colors: [themeManager.accentColor.opacity(0.15), .clear],
+                    startPoint: .top, endPoint: .bottom))
+                : AnyShapeStyle(Color.secondary.opacity(0.06))
+        )
     }
 }
 

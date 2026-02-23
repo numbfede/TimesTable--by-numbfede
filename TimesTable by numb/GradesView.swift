@@ -7,6 +7,12 @@ struct GradesView: View {
     @AppStorage("averageType") private var averageTypeRaw = AverageType.arithmetic.rawValue
     @AppStorage("gradeRangeMax") private var gradeRangeMax = 10
 
+    // Edit grade state
+    @State private var taskToEdit: StudyTask?
+    @State private var editGradeInput = ""
+    @State private var editWeightInput = ""
+    @State private var showingEditAlert = false
+
     private var averageType: AverageType {
         AverageType(rawValue: averageTypeRaw) ?? .arithmetic
     }
@@ -19,16 +25,39 @@ struct GradesView: View {
         presets.compactMap { preset in
             let subjectGrades = gradedTasks.filter { $0.subjectName == preset.name }
             guard !subjectGrades.isEmpty else { return nil }
-            let values = subjectGrades.compactMap(\.grade)
-            let avg = averageType.compute(values)
+            let avg: Double
+            if averageType.needsWeight {
+                let pairs = subjectGrades.compactMap { task -> (value: Double, weight: Double)? in
+                    guard let g = task.grade else { return nil }
+                    return (value: g, weight: task.gradeWeight ?? 1.0)
+                }
+                avg = averageType.computeWeighted(pairs)
+            } else {
+                avg = averageType.compute(subjectGrades.compactMap(\.grade))
+            }
             return (preset: preset, grades: subjectGrades, average: avg)
         }
     }
 
     private var overallAverage: Double? {
-        let allGrades = gradedTasks.compactMap(\.grade)
-        guard !allGrades.isEmpty else { return nil }
-        return averageType.compute(allGrades)
+        let graded = gradedTasks
+        guard !graded.isEmpty else { return nil }
+        if averageType.needsWeight {
+            let pairs = graded.compactMap { task -> (value: Double, weight: Double)? in
+                guard let g = task.grade else { return nil }
+                return (value: g, weight: task.gradeWeight ?? 1.0)
+            }
+            return averageType.computeWeighted(pairs)
+        } else {
+            return averageType.compute(graded.compactMap(\.grade))
+        }
+    }
+
+    private var maxAllowedWeight: Double {
+        guard let task = taskToEdit else { return 100.0 }
+        let otherTasks = tasks.filter { $0.id != task.id && $0.subjectName == task.subjectName && $0.isCompleted && $0.gradeWeight != nil }
+        let currentSum = otherTasks.compactMap { $0.gradeWeight }.reduce(0, +)
+        return max(0.0, 100.0 - currentSum)
     }
 
     var body: some View {
@@ -40,6 +69,56 @@ struct GradesView: View {
             }
         }
         .navigationTitle("Grades")
+        .alert("Edit Grade", isPresented: $showingEditAlert) {
+            TextField("Grade (e.g. 8.5)", text: $editGradeInput)
+#if os(iOS)
+                .keyboardType(.decimalPad)
+#endif
+            if averageType.needsWeight {
+                TextField("Weight % (max \(Int(maxAllowedWeight.rounded())))", text: $editWeightInput)
+#if os(iOS)
+                    .keyboardType(.decimalPad)
+#endif
+            }
+            Button("Save") {
+                if let task = taskToEdit,
+                   let grade = Double(editGradeInput.replacingOccurrences(of: ",", with: ".")) {
+                    task.grade = min(max(grade, 1.0), Double(gradeRangeMax))
+                    if averageType.needsWeight,
+                       let weight = Double(editWeightInput.replacingOccurrences(of: ",", with: ".")) {
+                        task.gradeWeight = min(max(weight, 0.0), maxAllowedWeight)
+                    }
+                }
+                editGradeInput = ""
+                editWeightInput = ""
+                taskToEdit = nil
+            }
+            Button("Remove Grade", role: .destructive) {
+                taskToEdit?.grade = nil
+                taskToEdit?.gradeWeight = nil
+                editGradeInput = ""
+                editWeightInput = ""
+                taskToEdit = nil
+            }
+            Button("Cancel", role: .cancel) {
+                editGradeInput = ""
+                editWeightInput = ""
+                taskToEdit = nil
+            }
+        } message: {
+            if let task = taskToEdit {
+                Text("Edit the grade for \"\(task.title)\"")
+            }
+        }
+    }
+
+    // MARK: - Edit grade action
+
+    private func editGrade(for task: StudyTask) {
+        taskToEdit = task
+        editGradeInput = task.grade.map { String(format: "%.1f", $0) } ?? ""
+        editWeightInput = task.gradeWeight.map { String(format: "%.0f", $0) } ?? ""
+        showingEditAlert = true
     }
 
     // MARK: - Grades List
@@ -61,7 +140,7 @@ struct GradesView: View {
             .padding(.horizontal, 20)
             .padding(.bottom, 20)
         }
-        .background(Color(nsOrUIColor: .secondarySystemBackground))
+        .themeBackground()
     }
 
     // MARK: - Overall Average
@@ -117,18 +196,31 @@ struct GradesView: View {
 
             // Individual grades
             ForEach(subject.grades) { task in
-                HStack {
-                    Text(task.title)
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                    Spacer()
-                    if let grade = task.grade {
-                        Text(String(format: "%.1f", grade))
-                            .font(.subheadline.bold().monospacedDigit())
-                            .foregroundStyle(gradeColor(grade))
+                Button {
+                    editGrade(for: task)
+                } label: {
+                    HStack {
+                        Image(systemName: "pencil.circle.fill")
+                            .font(.caption)
+                            .foregroundStyle(.secondary.opacity(0.5))
+                        Text(task.title)
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                        Spacer()
+                        if let weight = task.gradeWeight {
+                            Text("\(Int(weight))%")
+                                .font(.caption2)
+                                .foregroundStyle(.tertiary)
+                        }
+                        if let grade = task.grade {
+                            Text(String(format: "%.1f", grade))
+                                .font(.subheadline.bold().monospacedDigit())
+                                .foregroundStyle(gradeColor(grade))
+                        }
                     }
                 }
+                .buttonStyle(.plain)
             }
         }
         .padding(16)

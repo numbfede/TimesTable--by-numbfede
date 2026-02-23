@@ -188,3 +188,51 @@ struct GradientText: View {
             )
     }
 }
+
+// MARK: - App Custom Background
+
+struct ThemeBackground: View {
+    @Environment(ThemeManager.self) private var themeManager
+    @Environment(\.colorScheme) private var colorScheme
+
+    var body: some View {
+        Group {
+            if themeManager.themeMode == .custom {
+                if themeManager.hasCustomBackgroundImage, let data = themeManager.backgroundImageData {
+#if os(iOS)
+                    if let uiImage = UIImage(data: data) {
+                        Image(uiImage: uiImage)
+                            .resizable()
+                            .scaledToFill()
+                            .ignoresSafeArea()
+                    } else {
+                        themeManager.customBackgroundColor.ignoresSafeArea()
+                    }
+#else
+                    if let nsImage = NSImage(data: data) {
+                        Image(nsImage: nsImage)
+                            .resizable()
+                            .scaledToFill()
+                            .ignoresSafeArea()
+                    } else {
+                        themeManager.customBackgroundColor.ignoresSafeArea()
+                    }
+#endif
+                } else {
+                    themeManager.customBackgroundColor.ignoresSafeArea()
+                }
+            } else {
+                AppTheme.backgroundGradient(scheme: colorScheme)
+                    .ignoresSafeArea()
+            }
+        }
+    }
+}
+
+// MARK: - View Extension for Background
+
+extension View {
+    func themeBackground() -> some View {
+        self.background(ThemeBackground())
+    }
+}

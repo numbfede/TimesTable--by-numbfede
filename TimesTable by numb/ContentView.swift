@@ -17,12 +17,11 @@ struct ContentView: View {
         return w == 1 ? 7 : w - 1
     }()
 
-    var body: some View {
-#if os(iOS)
-        iOSRootView
-            .tint(Color(hex: "#0A84FF"))
-#else
-        NavigationSplitView {
+        var body: some View {
+            #if os(iOS)
+                iOSRootView
+            #else
+                NavigationSplitView {
             SidebarView(selectedDay: $selectedDay)
         } detail: {
             ScheduleView(selectedDay: $selectedDay)
@@ -31,6 +30,7 @@ struct ContentView: View {
     }
 
 #if os(iOS)
+    @Environment(ThemeManager.self) private var themeManager
     @State private var navigationPath = NavigationPath()
 
     private var iOSRootView: some View {
@@ -58,7 +58,7 @@ struct ContentView: View {
                             Image(systemName: "line.3.horizontal")
                                 .font(.title2)
                                 .foregroundStyle(
-                                    LinearGradient(colors: [Color(hex: "#0A84FF") ?? .blue, Color(hex: "#5E5CE6") ?? .indigo],
+                                    LinearGradient(colors: [themeManager.accentColor, themeManager.accentColor.opacity(0.8)],
                                                    startPoint: .topLeading, endPoint: .bottomTrailing)
                                 )
                         }
@@ -180,11 +180,30 @@ struct ScheduleView: View {
         return ((weekOfYear - 1) % numberOfWeeks) + 1
     }
 
-    var filteredClasses: [SchoolClass] {
+    func classesFor(day: Int) -> [SchoolClass] {
+        let filtered: [SchoolClass]
         if numberOfWeeks > 1 {
-            return classes.filter { $0.dayOfWeek == selectedDay && $0.weekIndex == selectedWeek }
+            filtered = classes.filter { $0.dayOfWeek == day && $0.weekIndex == selectedWeek }
+        } else {
+            filtered = classes.filter { $0.dayOfWeek == day }
         }
-        return classes.filter { $0.dayOfWeek == selectedDay }
+        
+        return filtered.sorted { a, b in
+            let cal = Calendar.current
+            let aComp = cal.dateComponents([.hour, .minute], from: a.startTime)
+            let bComp = cal.dateComponents([.hour, .minute], from: b.startTime)
+            
+            let aTime = (aComp.hour ?? 0) * 60 + (aComp.minute ?? 0)
+            let bTime = (bComp.hour ?? 0) * 60 + (bComp.minute ?? 0)
+            
+            if aTime != bTime {
+                return aTime < bTime
+            } else {
+                let aEnd = cal.dateComponents([.hour, .minute], from: a.endTime)
+                let bEnd = cal.dateComponents([.hour, .minute], from: b.endTime)
+                return ((aEnd.hour ?? 0) * 60 + (aEnd.minute ?? 0)) < ((bEnd.hour ?? 0) * 60 + (bEnd.minute ?? 0))
+            }
+        }
     }
 
     var body: some View {
@@ -195,6 +214,7 @@ struct ScheduleView: View {
                 portraitView
             }
         }
+        .themeBackground()
         .navigationTitle(isLandscape ? "Week View" : "Schedule")
         .toolbar {
             if !isLandscape {
@@ -232,7 +252,7 @@ struct ScheduleView: View {
 #endif
     }
 
-    // MARK: Portrait View
+    @Environment(ThemeManager.self) private var themeManager
 
     private var portraitView: some View {
         VStack(spacing: 0) {
@@ -240,11 +260,29 @@ struct ScheduleView: View {
                 weekPickerBar
             }
             dayPickerBar
-            if filteredClasses.isEmpty {
-                emptyState
-            } else {
-                classList
+            
+#if os(iOS)
+            TabView(selection: $selectedDay) {
+                ForEach(dayTags, id: \.0) { tag, _, _ in
+                    dayContent(for: tag)
+                        .tag(tag)
+                }
             }
+            .tabViewStyle(.page(indexDisplayMode: .never))
+#else
+            dayContent(for: selectedDay)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+#endif
+        }
+    }
+    
+    @ViewBuilder
+    private func dayContent(for day: Int) -> some View {
+        let dayClasses = classesFor(day: day)
+        if dayClasses.isEmpty {
+            emptyState
+        } else {
+            classList(for: dayClasses)
         }
     }
 
@@ -276,14 +314,14 @@ struct ScheduleView: View {
                         .background(
                             selectedWeek == week
                                 ? AnyShapeStyle(LinearGradient(
-                                    colors: [Color(hex: "#0A84FF") ?? .blue, Color(hex: "#5E5CE6") ?? .indigo],
+                                    colors: [themeManager.accentColor, themeManager.accentColor.opacity(0.8)],
                                     startPoint: .leading, endPoint: .trailing
                                   ))
                                 : AnyShapeStyle(Color.secondary.opacity(0.1))
                         )
                         .foregroundStyle(selectedWeek == week ? .white : .primary)
                         .clipShape(Capsule())
-                        .shadow(color: selectedWeek == week ? (Color(hex: "#0A84FF") ?? .blue).opacity(0.3) : .clear, radius: 4, y: 2)
+                        .shadow(color: selectedWeek == week ? themeManager.accentColor.opacity(0.3) : .clear, radius: 4, y: 2)
                     }
                     .buttonStyle(.plain)
                 }
@@ -321,7 +359,7 @@ struct ScheduleView: View {
                                 Group {
                                     if selectedDay == tag {
                                         LinearGradient(
-                                            colors: [Color(hex: "#0A84FF") ?? .blue, Color(hex: "#5E5CE6") ?? .indigo],
+                                            colors: [themeManager.accentColor, themeManager.accentColor.opacity(0.8)],
                                             startPoint: .topLeading, endPoint: .bottomTrailing
                                         )
                                     } else {
@@ -331,7 +369,7 @@ struct ScheduleView: View {
                             )
                             .foregroundStyle(selectedDay == tag ? .white : .primary)
                             .clipShape(RoundedRectangle(cornerRadius: 14))
-                            .shadow(color: selectedDay == tag ? (Color(hex: "#0A84FF") ?? .blue).opacity(0.3) : .clear, radius: 6, y: 3)
+                            .shadow(color: selectedDay == tag ? themeManager.accentColor.opacity(0.3) : .clear, radius: 6, y: 3)
                         }
                         .buttonStyle(.plain)
                         .id(tag)
@@ -350,10 +388,10 @@ struct ScheduleView: View {
 
     // MARK: Class List
 
-    private var classList: some View {
+    private func classList(for classes: [SchoolClass]) -> some View {
         ScrollView {
             LazyVStack(spacing: 10) {
-                ForEach(filteredClasses) { sc in
+                ForEach(classes) { sc in
                     NavigationLink {
                         ClassDetailView(schoolClass: sc)
                     } label: {
@@ -375,12 +413,12 @@ struct ScheduleView: View {
             Image(systemName: "calendar.badge.plus")
                 .font(.system(size: 56, weight: .light))
                 .foregroundStyle(
-                    LinearGradient(colors: [Color(hex: "#0A84FF") ?? .blue, Color(hex: "#BF5AF2") ?? .purple],
+                    LinearGradient(colors: [themeManager.accentColor, themeManager.accentColor.opacity(0.8)],
                                    startPoint: .topLeading, endPoint: .bottomTrailing)
                 )
                 .pulsating()
 
-            GradientText("No Classes", font: .title2.bold())
+            GradientText("No Classes", font: .title2.bold(), colors: [themeManager.accentColor, themeManager.accentColor.opacity(0.8)])
 
             Text("Tap + to add a class for this day.")
                 .font(.subheadline)
@@ -395,6 +433,7 @@ struct ScheduleView: View {
 struct ClassRow: View {
     let schoolClass: SchoolClass
     @State private var isPressed = false
+    @Environment(ThemeManager.self) private var themeManager
 
     var body: some View {
         HStack(spacing: 0) {
@@ -408,7 +447,7 @@ struct ClassRow: View {
                 VStack(alignment: .leading, spacing: 5) {
                     Text(schoolClass.name)
                         .font(.headline)
-                        .foregroundStyle(.primary)
+                        .foregroundStyle(themeManager.themeMode == .custom ? themeManager.customIconColor : .primary)
 
                     HStack(spacing: 10) {
                         if let room = schoolClass.room, !room.isEmpty {
@@ -430,6 +469,7 @@ struct ClassRow: View {
                 VStack(alignment: .trailing, spacing: 3) {
                     Text(schoolClass.startTime, style: .time)
                         .font(.subheadline.bold().monospacedDigit())
+                        .foregroundStyle(themeManager.themeMode == .custom ? themeManager.customIconColor : .primary)
                     Text(schoolClass.endTime, style: .time)
                         .font(.caption.monospacedDigit())
                         .foregroundStyle(.secondary)
@@ -440,7 +480,7 @@ struct ClassRow: View {
         }
         .background(
             RoundedRectangle(cornerRadius: AppTheme.cardRadius)
-                .fill(schoolClass.color.opacity(0.08))
+                .fill(themeManager.themeMode == .custom ? themeManager.customButtonColor : schoolClass.color.opacity(0.08))
                 .overlay(
                     RoundedRectangle(cornerRadius: AppTheme.cardRadius)
                         .strokeBorder(schoolClass.color.opacity(0.15), lineWidth: 0.5)

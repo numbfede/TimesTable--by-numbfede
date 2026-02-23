@@ -6,6 +6,7 @@ import SwiftUI
 
 enum AverageType: String, CaseIterable, Identifiable {
     case arithmetic       = "arithmetic"
+    case weighted         = "weighted"          // Weighted average
     case geometric        = "geometric"
     case harmonic         = "harmonic"
     case quadratic        = "quadratic"        // RMS
@@ -18,9 +19,13 @@ enum AverageType: String, CaseIterable, Identifiable {
 
     var id: String { rawValue }
 
+    /// Whether this type requires a weight for each grade
+    var needsWeight: Bool { self == .weighted }
+
     var displayName: String {
         switch self {
         case .arithmetic:     return String(localized: "Arithmetic Mean")
+        case .weighted:       return String(localized: "Weighted Mean")
         case .geometric:      return String(localized: "Geometric Mean")
         case .harmonic:       return String(localized: "Harmonic Mean")
         case .quadratic:      return String(localized: "Quadratic Mean (RMS)")
@@ -33,12 +38,20 @@ enum AverageType: String, CaseIterable, Identifiable {
         }
     }
 
+    /// Compute weighted average from (value, weight) pairs
+    func computeWeighted(_ pairs: [(value: Double, weight: Double)]) -> Double {
+        guard !pairs.isEmpty else { return 0 }
+        let totalWeight = pairs.reduce(0.0) { $0 + $1.weight }
+        guard totalWeight > 0 else { return compute(pairs.map(\.value)) }
+        return pairs.reduce(0.0) { $0 + $1.value * $1.weight } / totalWeight
+    }
+
     func compute(_ values: [Double]) -> Double {
         guard !values.isEmpty else { return 0 }
         let n = Double(values.count)
 
         switch self {
-        case .arithmetic:
+        case .arithmetic, .weighted:
             return values.reduce(0, +) / n
 
         case .geometric:
@@ -181,6 +194,7 @@ final class StudyTask {
     var isCompleted: Bool
     var hexColor: String
     var grade: Double?          // optional grade when completed
+    var gradeWeight: Double?    // optional weight (%) for weighted average
     var subjectName: String     // linked subject (preset name)
 
     @Relationship(inverse: \SchoolClass.tasks)
@@ -194,6 +208,7 @@ final class StudyTask {
         hexColor: String = "#e74c3c",
         linkedClass: SchoolClass? = nil,
         grade: Double? = nil,
+        gradeWeight: Double? = nil,
         subjectName: String = ""
     ) {
         self.id = UUID()
@@ -204,6 +219,7 @@ final class StudyTask {
         self.hexColor = hexColor
         self.linkedClass = linkedClass
         self.grade = grade
+        self.gradeWeight = gradeWeight
         self.subjectName = subjectName
     }
 

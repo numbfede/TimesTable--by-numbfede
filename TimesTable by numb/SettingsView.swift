@@ -2,9 +2,12 @@ import SwiftUI
 import SwiftData
 import AppIntents
 import UniformTypeIdentifiers
+import PhotosUI
 
 struct SettingsView: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(ThemeManager.self) private var themeManager
+
     @Query private var classes: [SchoolClass]
     @Query private var tasks: [StudyTask]
     @Query(sort: \ClassPreset.name) private var presets: [ClassPreset]
@@ -27,20 +30,76 @@ struct SettingsView: View {
     @State private var importErrorMessage = ""
     @State private var presetToDelete: ClassPreset?
     @State private var showingDeletePreset = false
+    
+    // Custom theme pickers state
+    @State private var showingImagePicker = false
+    @State private var selectedPhotoItem: PhotosPickerItem?
 
     var body: some View {
 #if os(macOS)
         macOSSettings
+            .photosPicker(isPresented: $showingImagePicker, selection: $selectedPhotoItem, matching: .images)
+            .onChange(of: selectedPhotoItem) { _, newItem in handlePhotoSelection(newItem) }
 #else
         iOSSettings
+            .photosPicker(isPresented: $showingImagePicker, selection: $selectedPhotoItem, matching: .images)
+            .onChange(of: selectedPhotoItem) { _, newItem in handlePhotoSelection(newItem) }
 #endif
     }
-
+    
+    private func handlePhotoSelection(_ item: PhotosPickerItem?) {
+        guard let item else { return }
+        Task {
+            if let data = try? await item.loadTransferable(type: Data.self) {
+                await MainActor.run {
+                    themeManager.backgroundImageData = data
+                    themeManager.notifyChange()
+                }
+            }
+        }
+    }
+    
     // MARK: - macOS layout
 #if os(macOS)
     private var macOSSettings: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
+
+                // MARK: Appearance
+                settingsGroup(title: "Appearance", icon: "paintpalette.fill", iconColors: [.purple, .pink]) {
+                    Picker("Theme Mode", selection: Bindable(themeManager).themeMode) {
+                        ForEach(ThemeMode.allCases) { mode in
+                            Text(mode.rawValue).tag(mode)
+                        }
+                    }
+                    ColorPicker("Accent Color", selection: Bindable(themeManager).accentColor)
+                    
+                    if themeManager.themeMode == .custom {
+                        Divider()
+                        Text("Custom Theme Options").font(.headline)
+                        ColorPicker("Background Color", selection: Bindable(themeManager).customBackgroundColor)
+                        ColorPicker("Button/Card Color", selection: Bindable(themeManager).customButtonColor)
+                        ColorPicker("Icon/Text Color", selection: Bindable(themeManager).customIconColor)
+                        
+                        Divider()
+                        HStack {
+                            Text("Background Image")
+                            Spacer()
+                            if themeManager.hasCustomBackgroundImage {
+                                Button("Remove Image") {
+                                    themeManager.backgroundImageData = nil
+                                    themeManager.notifyChange()
+                                }
+                                .buttonStyle(.bordered)
+                                .tint(.red)
+                            }
+                            Button("Select Image...") {
+                                showingImagePicker = true
+                            }
+                            .buttonStyle(.borderedProminent)
+                        }
+                    }
+                }
 
                 settingsGroup(title: String(localized: "Schedule"), icon: "calendar", iconColors: [.blue, .cyan]) {
                     Toggle("Show Weekends", isOn: $showWeekends)
@@ -232,6 +291,46 @@ struct SettingsView: View {
 #if os(iOS)
     private var iOSSettings: some View {
         Form {
+            // MARK: Appearance
+            Section {
+                Picker("Theme Mode", selection: Bindable(themeManager).themeMode) {
+                    ForEach(ThemeMode.allCases) { mode in
+                        Text(mode.rawValue).tag(mode)
+                    }
+                }
+                ColorPicker("Accent Color", selection: Bindable(themeManager).accentColor)
+                
+                if themeManager.themeMode == .custom {
+                    Text("Custom Theme Options")
+                        .font(.headline)
+                        .listRowBackground(Color.clear)
+                        .padding(.top, 8)
+                    
+                    ColorPicker("Background Color", selection: Bindable(themeManager).customBackgroundColor)
+                    ColorPicker("Button/Card Color", selection: Bindable(themeManager).customButtonColor)
+                    ColorPicker("Icon/Text Color", selection: Bindable(themeManager).customIconColor)
+                    
+                    HStack {
+                        Text("Background Image")
+                        Spacer()
+                        if themeManager.hasCustomBackgroundImage {
+                            Button("Remove") {
+                                themeManager.backgroundImageData = nil
+                                themeManager.notifyChange()
+                            }
+                            .buttonStyle(.bordered)
+                            .tint(.red)
+                        }
+                        Button("Select...") {
+                            showingImagePicker = true
+                        }
+                        .buttonStyle(.borderedProminent)
+                    }
+                }
+            } header: {
+                Label("Appearance", systemImage: "paintpalette.fill")
+            }
+
             Section {
                 Toggle("Show Weekends", isOn: $showWeekends)
                 Toggle("Repeating Weeks", isOn: $repeatingWeeksEnabled)

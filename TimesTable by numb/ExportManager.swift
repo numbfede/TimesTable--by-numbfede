@@ -77,6 +77,11 @@ final class ExportManager {
     }
 
     func importFrom(url: URL, context: ModelContext) throws {
+        guard url.startAccessingSecurityScopedResource() else {
+            throw NSError(domain: "ExportManager", code: 1, userInfo: [NSLocalizedDescriptionKey: String(localized: "Permission denied to access the file.")])
+        }
+        defer { url.stopAccessingSecurityScopedResource() }
+
         let data = try Data(contentsOf: url)
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
