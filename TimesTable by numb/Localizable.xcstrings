@@ -399,6 +399,7 @@
       }
     },
     "Edit the grade for \"%@\"" : {
+      "extractionState" : "stale",
       "localizations" : {
         "it" : {
           "stringUnit" : {

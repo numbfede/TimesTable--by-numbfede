@@ -188,22 +188,21 @@ struct ScheduleView: View {
             filtered = classes.filter { $0.dayOfWeek == day }
         }
         
-        return filtered.sorted { a, b in
-            let cal = Calendar.current
-            let aComp = cal.dateComponents([.hour, .minute], from: a.startTime)
-            let bComp = cal.dateComponents([.hour, .minute], from: b.startTime)
-            
-            let aTime = (aComp.hour ?? 0) * 60 + (aComp.minute ?? 0)
-            let bTime = (bComp.hour ?? 0) * 60 + (bComp.minute ?? 0)
-            
-            if aTime != bTime {
-                return aTime < bTime
-            } else {
-                let aEnd = cal.dateComponents([.hour, .minute], from: a.endTime)
-                let bEnd = cal.dateComponents([.hour, .minute], from: b.endTime)
-                return ((aEnd.hour ?? 0) * 60 + (aEnd.minute ?? 0)) < ((bEnd.hour ?? 0) * 60 + (bEnd.minute ?? 0))
-            }
+        let cal = Calendar.current
+        let mapped = filtered.map { sc -> (classItem: SchoolClass, start: Int, end: Int) in
+            let startComp = cal.dateComponents([.hour, .minute], from: sc.startTime)
+            let endComp = cal.dateComponents([.hour, .minute], from: sc.endTime)
+            let startMins = (startComp.hour ?? 0) * 60 + (startComp.minute ?? 0)
+            let endMins = (endComp.hour ?? 0) * 60 + (endComp.minute ?? 0)
+            return (classItem: sc, start: startMins, end: endMins)
         }
+        
+        return mapped.sorted { a, b in
+            if a.start != b.start {
+                return a.start < b.start
+            }
+            return a.end < b.end
+        }.map { $0.classItem }
     }
 
     var body: some View {
@@ -425,6 +424,7 @@ struct ScheduleView: View {
                 .foregroundStyle(.secondary)
             Spacer()
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
 

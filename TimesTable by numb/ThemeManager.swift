@@ -25,7 +25,7 @@ final class ThemeManager {
     
     var accentColor: Color {
         get { Color(hex: accentHex) ?? .blue }
-        set { accentHex = newValue.toHex() ?? "#0A84FF" }
+        set { accentHex = newValue.toHex() }
     }
 
     // MARK: - Custom Theme Variables
@@ -44,15 +44,15 @@ final class ThemeManager {
     // Colors
     var customBackgroundColor: Color {
         get { Color(hex: customBackgroundHex) ?? Color(white: 0.1) }
-        set { customBackgroundHex = newValue.toHex() ?? "#1C1C1E" }
+        set { customBackgroundHex = newValue.toHex() }
     }
     var customButtonColor: Color {
         get { Color(hex: customButtonHex) ?? Color(white: 0.2) }
-        set { customButtonHex = newValue.toHex() ?? "#2C2C2E" }
+        set { customButtonHex = newValue.toHex() }
     }
     var customIconColor: Color {
         get { Color(hex: customIconHex) ?? .white }
-        set { customIconHex = newValue.toHex() ?? "#FFFFFF" }
+        set { customIconHex = newValue.toHex() }
     }
 
     // MARK: - Background Image (GIF / Static)
@@ -66,10 +66,9 @@ final class ThemeManager {
 
     // This property holds the raw data (which could be a GIF)
     var backgroundImageData: Data? {
-        get { try? Data(contentsOf: imageURL) }
-        set {
-            if let newValue {
-                try? newValue.write(to: imageURL)
+        didSet {
+            if let backgroundImageData {
+                try? backgroundImageData.write(to: imageURL)
             } else {
                 try? FileManager.default.removeItem(at: imageURL)
             }
@@ -100,5 +99,8 @@ final class ThemeManager {
         self.customBackgroundHex = UserDefaults.standard.string(forKey: "customBackgroundHex") ?? "#1C1C1E"
         self.customButtonHex = UserDefaults.standard.string(forKey: "customButtonHex") ?? "#2C2C2E"
         self.customIconHex = UserDefaults.standard.string(forKey: "customIconHex") ?? "#FFFFFF"
+        
+        self.backgroundImageData = try? Data(contentsOf: FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0].appendingPathComponent("custom_background.data"))
     }
 }
+

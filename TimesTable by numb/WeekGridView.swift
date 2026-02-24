@@ -1,5 +1,6 @@
 import SwiftUI
 import SwiftData
+import Combine
 
 struct WeekGridView: View {
     @Query(sort: \SchoolClass.startTime) private var classes: [SchoolClass]
@@ -29,15 +30,8 @@ struct WeekGridView: View {
 
     private var totalHeight: CGFloat { (endHour - startHour) * hourHeight }
 
-    // Current time position
-    private var currentTimeOffset: CGFloat? {
-        let cal = Calendar.current
-        let now = Date()
-        let h = CGFloat(cal.component(.hour, from: now))
-        let m = CGFloat(cal.component(.minute, from: now))
-        let offset = (h + m / 60 - startHour) * hourHeight
-        return (offset >= 0 && offset <= totalHeight) ? offset : nil
-    }
+    // Current time position (updated via timer)
+    @State private var currentTimeOffset: CGFloat? = nil
 
     var body: some View {
         VStack(spacing: 0) {
@@ -53,7 +47,20 @@ struct WeekGridView: View {
                 let weekOfYear = Calendar.current.component(.weekOfYear, from: Date())
                 selectedWeek = ((weekOfYear - 1) % numberOfWeeks) + 1
             }
+            updateCurrentTimeOffset()
         }
+        .onReceive(Timer.publish(every: 60, on: .main, in: .common).autoconnect()) { _ in
+            updateCurrentTimeOffset()
+        }
+    }
+    
+    private func updateCurrentTimeOffset() {
+        let cal = Calendar.current
+        let now = Date()
+        let h = CGFloat(cal.component(.hour, from: now))
+        let m = CGFloat(cal.component(.minute, from: now))
+        let offset = (h + m / 60 - startHour) * hourHeight
+        currentTimeOffset = (offset >= 0 && offset <= totalHeight) ? offset : nil
     }
 
     private var weekPickerBar: some View {
@@ -215,18 +222,22 @@ struct ClassBlock: View {
     let hourHeight: CGFloat
 
     @State private var showDetail = false
-
-    private var topOffset: CGFloat {
+    let topOffset: CGFloat
+    let blockHeight: CGFloat
+    
+    init(schoolClass: SchoolClass, startHour: CGFloat, hourHeight: CGFloat) {
+        self.schoolClass = schoolClass
+        self.startHour = startHour
+        self.hourHeight = hourHeight
+        
         let cal = Calendar.current
         let comps = cal.dateComponents([.hour, .minute], from: schoolClass.startTime)
         let h = CGFloat(comps.hour ?? 0)
         let m = CGFloat(comps.minute ?? 0)
-        return (h + m / 60 - startHour) * hourHeight
-    }
-
-    private var blockHeight: CGFloat {
+        self.topOffset = (h + m / 60 - startHour) * hourHeight
+        
         let duration = schoolClass.endTime.timeIntervalSince(schoolClass.startTime) / 3600
-        return max(CGFloat(duration) * hourHeight, 24)
+        self.blockHeight = max(CGFloat(duration) * hourHeight, 24)
     }
 
     var body: some View {

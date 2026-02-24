@@ -13,29 +13,30 @@ struct TaskListView: View {
     @State private var gradeInput = ""
     @State private var weightInput = ""
     @State private var showingGradeAlert = false
+    @State private var currentMaxWeight: Double = 100.0
 
     private var averageType: AverageType {
         AverageType(rawValue: averageTypeRaw) ?? .arithmetic
     }
 
+    // Separated views to prevent list re-calculation on typing
     private var pendingTasks: [StudyTask] { tasks.filter { !$0.isCompleted } }
     private var completedTasks: [StudyTask] { tasks.filter { $0.isCompleted } }
 
-    private var maxAllowedWeight: Double {
-        guard let task = taskToGrade else { return 100.0 }
-        let otherTasks = tasks.filter { $0.id != task.id && $0.subjectName == task.subjectName && $0.isCompleted && $0.gradeWeight != nil }
-        let currentSum = otherTasks.compactMap { $0.gradeWeight }.reduce(0, +)
-        return max(0.0, 100.0 - currentSum)
-    }
 
     var body: some View {
         Group {
             if tasks.isEmpty {
                 emptyState
             } else {
-                taskList
+                TaskListViewContent(
+                    pendingTasks: pendingTasks,
+                    completedTasks: completedTasks,
+                    completeTask: completeTask
+                )
             }
         }
+        .themeBackground()
         .navigationTitle("Tasks")
         .toolbar {
 #if os(iOS)
@@ -65,7 +66,7 @@ struct TaskListView: View {
                 .keyboardType(.decimalPad)
 #endif
             if averageType.needsWeight {
-                TextField("Weight % (max \(Int(maxAllowedWeight.rounded())))", text: $weightInput)
+                TextField("Weight % (max \(Int(currentMaxWeight.rounded())))", text: $weightInput)
 #if os(iOS)
                     .keyboardType(.decimalPad)
 #endif
@@ -78,7 +79,7 @@ struct TaskListView: View {
                     }
                     if averageType.needsWeight,
                        let weight = Double(weightInput.replacingOccurrences(of: ",", with: ".")) {
-                        task.gradeWeight = min(max(weight, 0.0), maxAllowedWeight)
+                        task.gradeWeight = min(max(weight, 0.0), currentMaxWeight)
                     }
                     task.isCompleted = true
                 }
@@ -119,6 +120,12 @@ struct TaskListView: View {
             taskToGrade = task
             gradeInput = ""
             weightInput = ""
+            
+            // Compute max weight once
+            let otherTasks = tasks.filter { $0.id != task.id && $0.subjectName == task.subjectName && $0.isCompleted && $0.gradeWeight != nil }
+            let currentSum = otherTasks.compactMap { $0.gradeWeight }.reduce(0, +)
+            currentMaxWeight = max(0.0, 100.0 - currentSum)
+            
             showingGradeAlert = true
 #if os(iOS)
             Haptic.success()
@@ -126,9 +133,45 @@ struct TaskListView: View {
         }
     }
 
-    // MARK: - Task List
+    // (Moved to TaskListViewContent)
 
-    private var taskList: some View {
+    // MARK: - Empty State
+
+    private var emptyState: some View {
+        VStack(spacing: 16) {
+            Spacer()
+            Image(systemName: "checklist")
+                .font(.system(size: 56, weight: .light))
+                .foregroundStyle(
+                    LinearGradient(colors: [Color(hex: "#FF9F0A") ?? .orange, Color(hex: "#FF453A") ?? .red],
+                                   startPoint: .topLeading, endPoint: .bottomTrailing)
+                )
+                .pulsating()
+
+            GradientText("No Tasks", font: .title2.bold(),
+                         colors: [Color(hex: "#FF9F0A") ?? .orange, Color(hex: "#FF453A") ?? .red])
+
+            Text("Add assignments and homework here.")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+            Spacer()
+        }
+        .padding()
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+}
+
+// MARK: - Extracted Task List Content (Prevents re-renders on keystrokes)
+
+struct TaskListViewContent: View {
+    @Environment(\.modelContext) private var modelContext
+    
+    let pendingTasks: [StudyTask]
+    let completedTasks: [StudyTask]
+    let completeTask: (StudyTask) -> Void
+    
+    var body: some View {
         List {
             if !pendingTasks.isEmpty {
                 Section {
@@ -190,34 +233,8 @@ struct TaskListView: View {
                 }
             }
         }
-        .themeBackground()
         .listStyle(.plain)
         .scrollContentBackground(.hidden)
-    }
-
-    // MARK: - Empty State
-
-    private var emptyState: some View {
-        VStack(spacing: 16) {
-            Spacer()
-            Image(systemName: "checklist")
-                .font(.system(size: 56, weight: .light))
-                .foregroundStyle(
-                    LinearGradient(colors: [Color(hex: "#FF9F0A") ?? .orange, Color(hex: "#FF453A") ?? .red],
-                                   startPoint: .topLeading, endPoint: .bottomTrailing)
-                )
-                .pulsating()
-
-            GradientText("No Tasks", font: .title2.bold(),
-                         colors: [Color(hex: "#FF9F0A") ?? .orange, Color(hex: "#FF453A") ?? .red])
-
-            Text("Add assignments and homework here.")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-            Spacer()
-        }
-        .padding()
     }
 }
 

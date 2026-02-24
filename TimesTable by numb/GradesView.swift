@@ -11,7 +11,7 @@ struct GradesView: View {
     @State private var taskToEdit: StudyTask?
     @State private var editGradeInput = ""
     @State private var editWeightInput = ""
-    @State private var showingEditAlert = false
+    @State private var currentMaxWeight: Double = 100.0
 
     private var averageType: AverageType {
         AverageType(rawValue: averageTypeRaw) ?? .arithmetic
@@ -53,12 +53,6 @@ struct GradesView: View {
         }
     }
 
-    private var maxAllowedWeight: Double {
-        guard let task = taskToEdit else { return 100.0 }
-        let otherTasks = tasks.filter { $0.id != task.id && $0.subjectName == task.subjectName && $0.isCompleted && $0.gradeWeight != nil }
-        let currentSum = otherTasks.compactMap { $0.gradeWeight }.reduce(0, +)
-        return max(0.0, 100.0 - currentSum)
-    }
 
     var body: some View {
         Group {
@@ -68,57 +62,85 @@ struct GradesView: View {
                 gradesList
             }
         }
+        .themeBackground()
         .navigationTitle("Grades")
-        .alert("Edit Grade", isPresented: $showingEditAlert) {
-            TextField("Grade (e.g. 8.5)", text: $editGradeInput)
+        .sheet(item: $taskToEdit) { task in
+            NavigationStack {
+                Form {
+                    Section("Edit Grade") {
+                        TextField("Grade (e.g. 8.5)", text: $editGradeInput)
 #if os(iOS)
-                .keyboardType(.decimalPad)
+                            .keyboardType(.decimalPad)
 #endif
-            if averageType.needsWeight {
-                TextField("Weight % (max \(Int(maxAllowedWeight.rounded())))", text: $editWeightInput)
+                        if averageType.needsWeight {
+                            TextField("Weight % (max \(Int(currentMaxWeight.rounded())))", text: $editWeightInput)
 #if os(iOS)
-                    .keyboardType(.decimalPad)
+                                .keyboardType(.decimalPad)
 #endif
-            }
-            Button("Save") {
-                if let task = taskToEdit,
-                   let grade = Double(editGradeInput.replacingOccurrences(of: ",", with: ".")) {
-                    task.grade = min(max(grade, 1.0), Double(gradeRangeMax))
-                    if averageType.needsWeight,
-                       let weight = Double(editWeightInput.replacingOccurrences(of: ",", with: ".")) {
-                        task.gradeWeight = min(max(weight, 0.0), maxAllowedWeight)
+                        }
+                    }
+                    
+                    Section {
+                        Button(role: .destructive) {
+                            task.grade = nil
+                            task.gradeWeight = nil
+                            editGradeInput = ""
+                            editWeightInput = ""
+                            taskToEdit = nil
+                        } label: {
+                            Text("Remove Grade")
+                                .frame(maxWidth: .infinity, alignment: .center)
+                        }
                     }
                 }
-                editGradeInput = ""
-                editWeightInput = ""
-                taskToEdit = nil
+                .navigationTitle(task.title)
+#if os(iOS)
+                .navigationBarTitleDisplayMode(.inline)
+#endif
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button("Cancel") {
+                            editGradeInput = ""
+                            editWeightInput = ""
+                            taskToEdit = nil
+                        }
+                    }
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button("Save") {
+                            if let grade = Double(editGradeInput.replacingOccurrences(of: ",", with: ".")) {
+                                task.grade = min(max(grade, 1.0), Double(gradeRangeMax))
+                                if averageType.needsWeight,
+                                   let weight = Double(editWeightInput.replacingOccurrences(of: ",", with: ".")) {
+                                    task.gradeWeight = min(max(weight, 0.0), currentMaxWeight)
+                                }
+                            }
+                            editGradeInput = ""
+                            editWeightInput = ""
+                            taskToEdit = nil
+                        }
+                    }
+                }
             }
-            Button("Remove Grade", role: .destructive) {
-                taskToEdit?.grade = nil
-                taskToEdit?.gradeWeight = nil
-                editGradeInput = ""
-                editWeightInput = ""
-                taskToEdit = nil
-            }
-            Button("Cancel", role: .cancel) {
-                editGradeInput = ""
-                editWeightInput = ""
-                taskToEdit = nil
-            }
-        } message: {
-            if let task = taskToEdit {
-                Text("Edit the grade for \"\(task.title)\"")
-            }
+#if os(macOS)
+            .padding()
+            .frame(width: 350, height: 250)
+#else
+            .presentationDetents([.fraction(0.4), .medium])
+#endif
         }
     }
 
     // MARK: - Edit grade action
 
     private func editGrade(for task: StudyTask) {
-        taskToEdit = task
+        // Calculate max weight once
+        let otherTasks = tasks.filter { $0.id != task.id && $0.subjectName == task.subjectName && $0.isCompleted && $0.gradeWeight != nil }
+        let currentSum = otherTasks.compactMap { $0.gradeWeight }.reduce(0, +)
+        currentMaxWeight = max(0.0, 100.0 - currentSum)
+
         editGradeInput = task.grade.map { String(format: "%.1f", $0) } ?? ""
         editWeightInput = task.gradeWeight.map { String(format: "%.0f", $0) } ?? ""
-        showingEditAlert = true
+        taskToEdit = task
     }
 
     // MARK: - Grades List
@@ -140,7 +162,6 @@ struct GradesView: View {
             .padding(.horizontal, 20)
             .padding(.bottom, 20)
         }
-        .themeBackground()
     }
 
     // MARK: - Overall Average
@@ -219,6 +240,7 @@ struct GradesView: View {
                                 .foregroundStyle(gradeColor(grade))
                         }
                     }
+                    .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
             }
@@ -257,6 +279,7 @@ struct GradesView: View {
             Spacer()
         }
         .padding()
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     // MARK: - Helpers
