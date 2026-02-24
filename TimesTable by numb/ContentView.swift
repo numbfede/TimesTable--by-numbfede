@@ -80,17 +80,17 @@ struct ContentView: View {
                     }
                 case .tasks:
                     NavigationStack {
-                        TaskListView()
+                        TaskListView(currentTab: $currentTab)
                             .toolbarBackground(.hidden, for: .navigationBar)
                     }
                 case .grades:
                     NavigationStack {
-                        GradesView()
+                        GradesView(currentTab: $currentTab)
                             .toolbarBackground(.hidden, for: .navigationBar)
                     }
                 case .settings:
                     NavigationStack {
-                        SettingsView()
+                        SettingsView(currentTab: $currentTab)
                             .toolbarBackground(.hidden, for: .navigationBar)
                     }
                 }
@@ -116,6 +116,65 @@ struct ContentView: View {
 #endif
 }
 
+// MARK: - Global Hamburger Menu (iOS only)
+
+#if os(iOS)
+struct GlobalHamburgerMenu: ViewModifier {
+    @Binding var currentTab: iOSTab
+    @Environment(ThemeManager.self) private var themeManager
+    @AppStorage("useBottomTabBar") private var useBottomTabBar = true
+
+    func body(content: Content) -> some View {
+        content
+            .toolbar {
+                if !useBottomTabBar {
+                    ToolbarItem(placement: .navigationBarLeading) {
+                        Menu {
+                            Button {
+                                currentTab = .home
+                            } label: {
+                                Label("Schedule", systemImage: "calendar")
+                            }
+                            Button {
+                                currentTab = .tasks
+                            } label: {
+                                Label("Tasks", systemImage: "checklist")
+                            }
+                            Button {
+                                currentTab = .grades
+                            } label: {
+                                Label("Grades", systemImage: "chart.bar.doc.horizontal")
+                            }
+                            Button {
+                                currentTab = .settings
+                            } label: {
+                                Label("Settings", systemImage: "gearshape.fill")
+                            }
+                        } label: {
+                            Image(systemName: "line.3.horizontal")
+                                .font(.title2)
+                                .foregroundStyle(
+                                    LinearGradient(colors: [themeManager.accentColor, themeManager.accentColor.opacity(0.8)],
+                                                   startPoint: .topLeading, endPoint: .bottomTrailing)
+                                )
+                        }
+                    }
+                }
+            }
+    }
+}
+
+extension View {
+    func globalHamburgerMenu(currentTab: Binding<iOSTab>) -> some View {
+#if os(iOS)
+        modifier(GlobalHamburgerMenu(currentTab: currentTab))
+#else
+        self
+#endif
+    }
+}
+#endif
+
 // MARK: - Floating Tab Bar (iOS only)
 
 #if os(iOS)
@@ -123,6 +182,7 @@ struct FloatingTabBar: View {
     @Binding var activeTab: iOSTab
     @Environment(ThemeManager.self) private var themeManager
     @Namespace private var animation
+    @State private var barWidth: CGFloat = 0
     
     var body: some View {
         HStack(spacing: 0) {
@@ -159,6 +219,31 @@ struct FloatingTabBar: View {
                 .buttonStyle(.plain)
             }
         }
+        .background {
+            GeometryReader { proxy in
+                Color.clear
+                    .onAppear { barWidth = proxy.size.width }
+                    .onChange(of: proxy.size.width) { _, w in barWidth = w }
+            }
+        }
+        .highPriorityGesture(
+            DragGesture(minimumDistance: 10)
+                .onChanged { value in
+                    guard barWidth > 0 else { return }
+                    let tabWidth = barWidth / CGFloat(iOSTab.allCases.count)
+                    let x = min(max(value.location.x, 0), barWidth - 1)
+                    let index = Int(x / tabWidth)
+                    let tabs = iOSTab.allCases
+                    let newTab = tabs[index]
+                    
+                    if activeTab != newTab {
+                        withAnimation(.interactiveSpring(response: 0.35, dampingFraction: 0.65, blendDuration: 0)) {
+                            activeTab = newTab
+                        }
+                        Haptic.selection()
+                    }
+                }
+        )
         .padding(6)
         .background {
             Capsule()
@@ -208,7 +293,7 @@ struct SidebarView: View {
                 }
             }
             NavigationLink {
-                SettingsView()
+                SettingsView(currentTab: $currentTab)
             } label: {
                 Label { Text("Settings") } icon: {
                     Image(systemName: "gearshape.fill")
@@ -240,6 +325,7 @@ struct ScheduleView: View {
     @State private var selectedWeek: Int = 1
 
     @Environment(\.horizontalSizeClass) private var hSizeClass
+    @Environment(\.scenePhase) private var scenePhase
 #if os(iOS)
     @State private var orientation = UIDevice.current.orientation
 #endif
@@ -311,36 +397,9 @@ struct ScheduleView: View {
         }
         .themeBackground()
         .navigationTitle(isLandscape ? "Week View" : "Schedule")
+        .globalHamburgerMenu(currentTab: $currentTab)
         .toolbar {
 #if os(iOS)
-            if !useBottomTabBar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Menu {
-                        Button {
-                            currentTab = .tasks
-                        } label: {
-                            Label("Tasks", systemImage: "checklist")
-                        }
-                        Button {
-                            currentTab = .grades
-                        } label: {
-                            Label("Grades", systemImage: "chart.bar.doc.horizontal")
-                        }
-                        Button {
-                            currentTab = .settings
-                        } label: {
-                            Label("Settings", systemImage: "gearshape.fill")
-                        }
-                    } label: {
-                        Image(systemName: "line.3.horizontal")
-                            .font(.title2)
-                            .foregroundStyle(
-                                LinearGradient(colors: [themeManager.accentColor, themeManager.accentColor.opacity(0.8)],
-                                               startPoint: .topLeading, endPoint: .bottomTrailing)
-                            )
-                    }
-                }
-            }
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button { showingAddClass.toggle() } label: {
                     Image(systemName: "plus.circle.fill")
@@ -508,6 +567,14 @@ struct ScheduleView: View {
                 withAnimation(AppTheme.smooth) {
                     proxy.scrollTo(newVal, anchor: .center)
                 }
+            }
+        }
+        .onChange(of: classes) { _, newClasses in
+            WidgetDataManager.shared.updateWidgetData(classes: newClasses)
+        }
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active {
+                WidgetDataManager.shared.updateWidgetData(classes: classes)
             }
         }
     }

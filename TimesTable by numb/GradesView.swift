@@ -1,7 +1,10 @@
 import SwiftUI
 import SwiftData
-
 struct GradesView: View {
+#if os(iOS)
+    @Binding var currentTab: iOSTab
+#endif
+
     @Query(sort: \ClassPreset.name) private var presets: [ClassPreset]
     @Query private var tasks: [StudyTask]
     @AppStorage("averageType") private var averageTypeRaw = AverageType.arithmetic.rawValue
@@ -65,6 +68,9 @@ struct GradesView: View {
         }
         .themeBackground()
         .navigationTitle("Grades")
+#if os(iOS)
+        .globalHamburgerMenu(currentTab: $currentTab)
+#endif
         .sheet(item: $taskToEdit) { task in
             NavigationStack {
                 Form {

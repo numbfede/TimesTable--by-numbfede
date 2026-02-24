@@ -1,7 +1,10 @@
 import SwiftUI
 import SwiftData
-
 struct TaskListView: View {
+#if os(iOS)
+    @Binding var currentTab: iOSTab
+#endif
+
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \StudyTask.dueDate) private var tasks: [StudyTask]
     @AppStorage("averageType") private var averageTypeRaw = AverageType.arithmetic.rawValue
@@ -38,6 +41,9 @@ struct TaskListView: View {
         }
         .themeBackground()
         .navigationTitle("Tasks")
+#if os(iOS)
+        .globalHamburgerMenu(currentTab: $currentTab)
+#endif
         .toolbar {
 #if os(iOS)
             ToolbarItem(placement: .navigationBarTrailing) {

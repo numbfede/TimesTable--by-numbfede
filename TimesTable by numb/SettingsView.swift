@@ -46,6 +46,10 @@ struct ImagePickersModifier: ViewModifier {
 }
 
 struct SettingsView: View {
+#if os(iOS)
+    @Binding var currentTab: iOSTab
+#endif
+
     @Environment(\.modelContext) private var modelContext
     @Environment(ThemeManager.self) private var themeManager
 
@@ -655,6 +659,7 @@ struct SettingsView: View {
         .foregroundStyle(themeManager.themeMode == .custom ? themeManager.customIconColor : .primary)
         .navigationTitle("Settings")
 #if os(iOS)
+        .globalHamburgerMenu(currentTab: $currentTab)
         .safeAreaPadding(.bottom, useBottomTabBar ? 80 : 0)
 #endif
         .sheet(isPresented: $showingExportSheet) {

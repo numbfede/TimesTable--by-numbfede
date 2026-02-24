@@ -11,7 +11,8 @@ import SwiftUI
 @main
 struct TimeTableWidgetBundle: WidgetBundle {
     var body: some Widget {
-        TimeTableWidget()
+        NextClassWidget()
+        TodayScheduleWidget()
         TimeTableWidgetControl()
     }
 }
