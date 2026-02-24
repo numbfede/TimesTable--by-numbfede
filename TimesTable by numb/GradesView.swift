@@ -6,6 +6,7 @@ struct GradesView: View {
     @Query private var tasks: [StudyTask]
     @AppStorage("averageType") private var averageTypeRaw = AverageType.arithmetic.rawValue
     @AppStorage("gradeRangeMax") private var gradeRangeMax = 10
+    @AppStorage("useBottomTabBar") private var useBottomTabBar = true
 
     // Edit grade state
     @State private var taskToEdit: StudyTask?
@@ -162,6 +163,9 @@ struct GradesView: View {
             .padding(.horizontal, 20)
             .padding(.bottom, 20)
         }
+#if os(iOS)
+        .safeAreaPadding(.bottom, useBottomTabBar ? 80 : 0)
+#endif
     }
 
     // MARK: - Overall Average

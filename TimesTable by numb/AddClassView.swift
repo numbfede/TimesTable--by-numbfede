@@ -23,6 +23,8 @@ struct AddEditClassView: View {
 
     @AppStorage("numberOfWeeks") private var numberOfWeeks = 1
     @AppStorage("repeatingWeeksEnabled") private var repeatingWeeksEnabled = false
+    @AppStorage("defaultClassDuration") private var defaultClassDuration = 60
+    @AppStorage("defaultStartTime") private var defaultStartTime = 480
 
     private var isEditing: Bool { existingClass != nil }
 
@@ -209,6 +211,7 @@ struct AddEditClassView: View {
                             )
                             .foregroundStyle(.white)
                     }
+                    .buttonStyle(.plain)
                     .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty)
                 }
             }
@@ -403,6 +406,14 @@ struct AddEditClassView: View {
     private func prefill() {
         guard let c = existingClass else {
             weekIndex = defaultWeekIndex
+            let calendar = Calendar.current
+            var components = calendar.dateComponents([.year, .month, .day], from: Date())
+            components.hour = defaultStartTime / 60
+            components.minute = defaultStartTime % 60
+            if let newStart = calendar.date(from: components) {
+                startTime = newStart
+                endTime = newStart.addingTimeInterval(Double(defaultClassDuration * 60))
+            }
             return
         }
         name = c.name
@@ -488,3 +499,4 @@ extension Color {
         case tertiarySystemBackground
     }
 }
+

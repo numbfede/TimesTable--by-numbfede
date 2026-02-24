@@ -191,6 +191,13 @@ struct GradientText: View {
 
 // MARK: - App Custom Background
 
+private func isGIF(data: Data) -> Bool {
+    guard data.count > 3 else { return false }
+    let header = data.prefix(3)
+    let gifHeader = Data([0x47, 0x49, 0x46]) // "GIF"
+    return header == gifHeader
+}
+
 struct ThemeBackground: View {
     @Environment(ThemeManager.self) private var themeManager
     @Environment(\.colorScheme) private var colorScheme
@@ -201,25 +208,30 @@ struct ThemeBackground: View {
         Group {
             if themeManager.themeMode == .custom {
                 if !ignoreImage && themeManager.hasCustomBackgroundImage, let data = themeManager.backgroundImageData {
+                    if isGIF(data: data) {
+                        GIFBackgroundView(data: data)
+                            .ignoresSafeArea()
+                    } else {
 #if os(iOS)
-                    if let uiImage = UIImage(data: data) {
-                        Image(uiImage: uiImage)
-                            .resizable()
-                            .scaledToFill()
-                            .ignoresSafeArea()
-                    } else {
-                        themeManager.customBackgroundColor.ignoresSafeArea()
-                    }
+                        if let uiImage = UIImage(data: data) {
+                            Image(uiImage: uiImage)
+                                .resizable()
+                                .scaledToFill()
+                                .ignoresSafeArea()
+                        } else {
+                            themeManager.customBackgroundColor.ignoresSafeArea()
+                        }
 #else
-                    if let nsImage = NSImage(data: data) {
-                        Image(nsImage: nsImage)
-                            .resizable()
-                            .scaledToFill()
-                            .ignoresSafeArea()
-                    } else {
-                        themeManager.customBackgroundColor.ignoresSafeArea()
-                    }
+                        if let nsImage = NSImage(data: data) {
+                            Image(nsImage: nsImage)
+                                .resizable()
+                                .scaledToFill()
+                                .ignoresSafeArea()
+                        } else {
+                            themeManager.customBackgroundColor.ignoresSafeArea()
+                        }
 #endif
+                    }
                 } else {
                     themeManager.customBackgroundColor.ignoresSafeArea()
                 }

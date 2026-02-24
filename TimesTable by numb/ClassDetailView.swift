@@ -14,6 +14,7 @@ struct ClassDetailView: View {
     @State private var showingPhotoPicker = false
     @State private var selectedPhotos: [PhotosPickerItem] = []
     @State private var showingDeleteConfirm = false
+    @State private var editingTask: StudyTask?
 
     private let timeFormatter: DateFormatter = {
         let f = DateFormatter()
@@ -45,7 +46,7 @@ struct ClassDetailView: View {
                         .padding(.vertical, 4)
                     } else {
                         ForEach(schoolClass.tasks.sorted(by: { $0.dueDate < $1.dueDate })) { task in
-                            taskRow(task)
+                            taskRow(task, onEdit: { editingTask = task })
                             if task.id != schoolClass.tasks.sorted(by: { $0.dueDate < $1.dueDate }).last?.id {
                                 Divider().padding(.leading, 32)
                             }
@@ -138,6 +139,9 @@ struct ClassDetailView: View {
         }
         .sheet(isPresented: $showingAddTask) {
             AddEditTaskView(linkedClass: schoolClass)
+        }
+        .sheet(item: $editingTask) { task in
+            AddEditTaskView(linkedClass: schoolClass, editingTask: task)
         }
         .photosPicker(isPresented: $showingPhotoPicker, selection: $selectedPhotos, matching: .images)
         .onChange(of: selectedPhotos) { _, newItems in
@@ -234,7 +238,7 @@ struct ClassDetailView: View {
 
     // MARK: - Task Row
 
-    private func taskRow(_ task: StudyTask) -> some View {
+    private func taskRow(_ task: StudyTask, onEdit: @escaping () -> Void) -> some View {
         HStack(spacing: 10) {
             Button {
                 withAnimation(AppTheme.bouncy) {
@@ -252,17 +256,22 @@ struct ClassDetailView: View {
             }
             .buttonStyle(.plain)
 
-            VStack(alignment: .leading, spacing: 2) {
-                Text(task.title)
-                    .font(.subheadline)
-                    .strikethrough(task.isCompleted)
-                    .foregroundStyle(task.isCompleted ? .secondary : .primary)
-                Text(task.dueDate, style: .date)
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
+            Button(action: onEdit) {
+                HStack {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(task.title)
+                            .font(.subheadline)
+                            .strikethrough(task.isCompleted)
+                            .foregroundStyle(task.isCompleted ? .secondary : .primary)
+                        Text(task.dueDate, style: .date)
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                }
             }
-
-            Spacer()
+            .buttonStyle(.plain)
+            .contentShape(Rectangle())
         }
         .padding(.vertical, 4)
     }

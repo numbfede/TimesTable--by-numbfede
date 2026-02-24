@@ -166,17 +166,20 @@ struct TaskListView: View {
 
 struct TaskListViewContent: View {
     @Environment(\.modelContext) private var modelContext
+    @AppStorage("useBottomTabBar") private var useBottomTabBar = true
     
     let pendingTasks: [StudyTask]
     let completedTasks: [StudyTask]
     let completeTask: (StudyTask) -> Void
+    
+    @State private var editingTask: StudyTask?
     
     var body: some View {
         List {
             if !pendingTasks.isEmpty {
                 Section {
                     ForEach(pendingTasks) { task in
-                        TaskRow(task: task, onToggle: { completeTask(task) })
+                        TaskRow(task: task, onToggle: { completeTask(task) }, onEdit: { editingTask = task })
                             .swipeActions(edge: .trailing) {
                                 Button(role: .destructive) {
                                     withAnimation(AppTheme.smooth) {
@@ -206,7 +209,7 @@ struct TaskListViewContent: View {
             if !completedTasks.isEmpty {
                 Section {
                     ForEach(completedTasks) { task in
-                        TaskRow(task: task, onToggle: { completeTask(task) })
+                        TaskRow(task: task, onToggle: { completeTask(task) }, onEdit: { editingTask = task })
                             .swipeActions(edge: .trailing) {
                                 Button(role: .destructive) {
                                     withAnimation(AppTheme.smooth) {
@@ -235,6 +238,12 @@ struct TaskListViewContent: View {
         }
         .listStyle(.plain)
         .scrollContentBackground(.hidden)
+#if os(iOS)
+        .safeAreaPadding(.bottom, useBottomTabBar ? 80 : 0)
+#endif
+        .sheet(item: $editingTask) { task in
+            AddEditTaskView(editingTask: task)
+        }
     }
 }
 
@@ -245,6 +254,7 @@ struct TaskRow: View {
     @AppStorage("gradeRangeMax") private var gradeRangeMax = 10
     @Environment(ThemeManager.self) private var themeManager
     var onToggle: () -> Void
+    var onEdit: () -> Void
 
     var body: some View {
         HStack(spacing: 12) {
@@ -259,53 +269,61 @@ struct TaskRow: View {
             }
             .buttonStyle(.plain)
 
-            VStack(alignment: .leading, spacing: 4) {
-                Text(task.title)
-                    .font(.headline)
-                    .strikethrough(task.isCompleted)
-                    .foregroundStyle(task.isCompleted ? .secondary : .primary)
+            Button {
+                onEdit()
+            } label: {
+                HStack(spacing: 12) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(task.title)
+                            .font(.headline)
+                            .strikethrough(task.isCompleted)
+                            .foregroundStyle(task.isCompleted ? .secondary : .primary)
 
-                if let detail = task.detail, !detail.isEmpty {
-                    Text(detail)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                }
-
-                HStack(spacing: 6) {
-                    Image(systemName: "calendar")
-                        .font(.caption2)
-                    Text(task.dueDate, style: .date)
-                    if !task.subjectName.isEmpty {
-                        Text("·")
-                        Image(systemName: "book.fill")
-                            .font(.caption2)
-                        Text(task.subjectName)
-                    }
-                }
-                .font(.caption2)
-                .foregroundStyle(.secondary)
-            }
-
-            Spacer()
-
-            VStack(alignment: .trailing, spacing: 2) {
-                if let grade = task.grade {
-                    HStack(spacing: 4) {
-                        Text(String(format: "%.1f", grade))
-                            .font(.subheadline.bold().monospacedDigit())
-                            .foregroundStyle(gradeColor(grade))
-                        if let weight = task.gradeWeight {
-                            Text("(\(Int(weight))%)")
-                                .font(.caption2)
+                        if let detail = task.detail, !detail.isEmpty {
+                            Text(detail)
+                                .font(.caption)
                                 .foregroundStyle(.secondary)
+                                .lineLimit(1)
                         }
+
+                        HStack(spacing: 6) {
+                            Image(systemName: "calendar")
+                                .font(.caption2)
+                            Text(task.dueDate, style: .date)
+                            if !task.subjectName.isEmpty {
+                                Text("·")
+                                Image(systemName: "book.fill")
+                                    .font(.caption2)
+                                Text(task.subjectName)
+                            }
+                        }
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                    }
+
+                    Spacer()
+
+                    VStack(alignment: .trailing, spacing: 2) {
+                        if let grade = task.grade {
+                            HStack(spacing: 4) {
+                                Text(String(format: "%.1f", grade))
+                                    .font(.subheadline.bold().monospacedDigit())
+                                    .foregroundStyle(gradeColor(grade))
+                                if let weight = task.gradeWeight {
+                                    Text("(\(Int(weight))%)")
+                                        .font(.caption2)
+                                        .foregroundStyle(.secondary)
+                                }
+                            }
+                        }
+                        RoundedRectangle(cornerRadius: 2)
+                            .fill(task.color.opacity(0.6))
+                            .frame(width: 4, height: 32)
                     }
                 }
-                RoundedRectangle(cornerRadius: 2)
-                    .fill(task.color.opacity(0.6))
-                    .frame(width: 4, height: 32)
             }
+            .buttonStyle(.plain)
+            .contentShape(Rectangle())
         }
         .padding(.vertical, 4)
         .padding(.horizontal, 4)
@@ -333,6 +351,7 @@ struct AddEditTaskView: View {
     @Query(sort: \ClassPreset.name) private var presets: [ClassPreset]
 
     var linkedClass: SchoolClass? = nil
+    var editingTask: StudyTask? = nil
 
     @State private var title = ""
     @State private var detail = ""
@@ -505,12 +524,32 @@ struct AddEditTaskView: View {
                             }
                         }
                     }
+                    
+                    // MARK: Delete Task Button
+                    if let taskToDelete = editingTask {
+                        Button(role: .destructive) {
+                            withAnimation(AppTheme.smooth) {
+                                modelContext.delete(taskToDelete)
+                                dismiss()
+                            }
+                        } label: {
+                            Label("Delete Task", systemImage: "trash")
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 12)
+                        }
+                        .buttonStyle(.plain)
+                        .background(
+                            RoundedRectangle(cornerRadius: 14)
+                                .fill(Color.red.opacity(0.1))
+                        )
+                        .foregroundStyle(.red)
+                    }
                 }
                 .padding(.horizontal, 20)
                 .padding(.vertical, 12)
             }
             .background(Color(nsOrUIColor: .secondarySystemBackground))
-            .navigationTitle("New Task")
+            .navigationTitle(editingTask != nil ? "Edit Task" : "New Task")
 #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
 #endif
@@ -538,12 +577,20 @@ struct AddEditTaskView: View {
                             )
                             .foregroundStyle(.white)
                     }
+                    .buttonStyle(.plain)
                     .disabled(!canSave)
                 }
             }
             .onAppear {
-                // If opened from a class detail, pre-select subject
-                if let cls = linkedClass {
+                if let task = editingTask {
+                    title = task.title
+                    detail = task.detail ?? ""
+                    dueDate = task.dueDate
+                    selectedColor = task.hexColor
+                    customColor = task.color
+                    selectedSubject = task.subjectName
+                } else if let cls = linkedClass {
+                    // Pre-select subject if no editing task but created from a specific class
                     selectedSubject = cls.name
                     selectedColor = cls.hexColor
                     customColor = cls.color
@@ -591,15 +638,24 @@ struct AddEditTaskView: View {
     }
 
     private func save() {
-        let task = StudyTask(
-            title: title,
-            detail: detail.isEmpty ? nil : detail,
-            dueDate: dueDate,
-            hexColor: selectedColor,
-            linkedClass: linkedClass,
-            subjectName: selectedSubject
-        )
-        modelContext.insert(task)
+        if let task = editingTask {
+            task.title = title
+            task.detail = detail.isEmpty ? nil : detail
+            task.dueDate = dueDate
+            task.hexColor = selectedColor
+            task.linkedClass = linkedClass ?? task.linkedClass
+            task.subjectName = selectedSubject
+        } else {
+            let task = StudyTask(
+                title: title,
+                detail: detail.isEmpty ? nil : detail,
+                dueDate: dueDate,
+                hexColor: selectedColor,
+                linkedClass: linkedClass,
+                subjectName: selectedSubject
+            )
+            modelContext.insert(task)
+        }
         dismiss()
     }
 }

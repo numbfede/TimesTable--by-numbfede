@@ -3,10 +3,20 @@ import SwiftData
 
 // MARK: - Navigation Destinations (iOS hamburger menu)
 
-enum AppDestination: Hashable {
-    case tasks
-    case grades
-    case settings
+enum iOSTab: String, CaseIterable {
+    case home = "Home"
+    case tasks = "Tasks"
+    case grades = "Grades"
+    case settings = "Settings"
+    
+    var icon: String {
+        switch self {
+        case .home: return "calendar"
+        case .tasks: return "checklist"
+        case .grades: return "chart.bar.doc.horizontal"
+        case .settings: return "gearshape.fill"
+        }
+    }
 }
 
 // MARK: - Root Content View
@@ -17,7 +27,12 @@ struct ContentView: View {
         return w == 1 ? 7 : w - 1
     }()
 
-        var body: some View {
+    @AppStorage("hasSeenWelcome") private var hasSeenWelcome = false
+    @AppStorage("hasSeenTutorial") private var hasSeenTutorial = false
+    @State private var tutorialFrames: [TutorialStep: CGRect] = [:]
+
+    var body: some View {
+        Group {
             #if os(iOS)
                 iOSRootView
             #else
@@ -27,60 +42,136 @@ struct ContentView: View {
             ScheduleView(selectedDay: $selectedDay)
         }
 #endif
+        }
+        .onPreferenceChange(TutorialFrameKey.self) { frames in
+            self.tutorialFrames = frames
+        }
+#if os(iOS)
+        .fullScreenCover(isPresented: .init(get: { !hasSeenWelcome }, set: { _ in })) {
+            WelcomeView()
+        }
+#else
+        .sheet(isPresented: .init(get: { !hasSeenWelcome }, set: { _ in })) {
+            WelcomeView()
+                .frame(minWidth: 600, minHeight: 450)
+        }
+#endif
+        .overlay {
+            if hasSeenWelcome && !hasSeenTutorial {
+                TutorialOverlayView(targetFrames: tutorialFrames)
+            }
+        }
     }
 
 #if os(iOS)
     @Environment(ThemeManager.self) private var themeManager
-    @State private var navigationPath = NavigationPath()
+    @State private var currentTab: iOSTab = .home
+    @AppStorage("useBottomTabBar") private var useBottomTabBar = true
 
     private var iOSRootView: some View {
-        NavigationStack(path: $navigationPath) {
-            ScheduleView(selectedDay: $selectedDay)
-                .toolbar {
-                    ToolbarItem(placement: .navigationBarLeading) {
-                        Menu {
-                            Button {
-                                navigationPath.append(AppDestination.tasks)
-                            } label: {
-                                Label("Tasks", systemImage: "checklist")
-                            }
-                            Button {
-                                navigationPath.append(AppDestination.grades)
-                            } label: {
-                                Label("Grades", systemImage: "chart.bar.doc.horizontal")
-                            }
-                            Button {
-                                navigationPath.append(AppDestination.settings)
-                            } label: {
-                                Label("Settings", systemImage: "gearshape.fill")
-                            }
-                        } label: {
-                            Image(systemName: "line.3.horizontal")
-                                .font(.title2)
-                                .foregroundStyle(
-                                    LinearGradient(colors: [themeManager.accentColor, themeManager.accentColor.opacity(0.8)],
-                                                   startPoint: .topLeading, endPoint: .bottomTrailing)
-                                )
-                        }
+        ZStack(alignment: .bottom) {
+            // Main Content Area
+            Group {
+                switch currentTab {
+                case .home:
+                    NavigationStack {
+                        ScheduleView(selectedDay: $selectedDay, currentTab: $currentTab)
+                            .toolbarBackground(.hidden, for: .navigationBar)
                     }
-                }
-                .navigationDestination(for: AppDestination.self) { destination in
-                    switch destination {
-                    case .tasks:
+                case .tasks:
+                    NavigationStack {
                         TaskListView()
-                    case .grades:
+                            .toolbarBackground(.hidden, for: .navigationBar)
+                    }
+                case .grades:
+                    NavigationStack {
                         GradesView()
-                    case .settings:
+                            .toolbarBackground(.hidden, for: .navigationBar)
+                    }
+                case .settings:
+                    NavigationStack {
                         SettingsView()
+                            .toolbarBackground(.hidden, for: .navigationBar)
                     }
                 }
+            }
+            .safeAreaPadding(.bottom, useBottomTabBar ? 80 : 0) // Spazio per la tab bar
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            
+            if useBottomTabBar {
+                // Custom Floating Tab Bar
+                FloatingTabBar(activeTab: $currentTab)
+                    .tutorialTarget(.bottomTabs)
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 10)
+            }
+        }
+        .ignoresSafeArea(.keyboard, edges: .bottom)
+        .onReceive(NotificationCenter.default.publisher(for: Notification.Name("NavigateToSettings"))) { _ in
+            withAnimation {
+                currentTab = .settings
+            }
         }
     }
 #endif
 }
 
+// MARK: - Floating Tab Bar (iOS only)
+
+#if os(iOS)
+struct FloatingTabBar: View {
+    @Binding var activeTab: iOSTab
+    @Environment(ThemeManager.self) private var themeManager
+    @Namespace private var animation
+    
+    var body: some View {
+        HStack(spacing: 0) {
+            ForEach(iOSTab.allCases, id: \.self) { tab in
+                Button {
+                    withAnimation(.spring(response: 0.4, dampingFraction: 0.7, blendDuration: 0)) {
+                        activeTab = tab
+                    }
+                    Haptic.selection()
+                } label: {
+                    VStack(spacing: 4) {
+                        Image(systemName: tab.icon)
+                            .font(.title2)
+                            .frame(height: 24)
+                        Text(tab.rawValue)
+                            .font(.caption2.bold())
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 10)
+                    // Il colore dipenderà se la tab è attiva o meno
+                    .foregroundStyle(activeTab == tab ? .white : .primary.opacity(0.5))
+                    // Sfondo animato (solo per il tab selezionato)
+                    .background {
+                        if activeTab == tab {
+                            Capsule()
+                                .fill(themeManager.accentColor)
+                                .matchedGeometryEffect(id: "ACTIVETAB", in: animation)
+                                .shadow(color: themeManager.accentColor.opacity(0.4), radius: 8, y: 4)
+                        }
+                    }
+                    // Effetto "Liquid" al click
+                    .contentShape(Capsule())
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(6)
+        .background {
+            Capsule()
+                .fill(.ultraThinMaterial)
+                .shadow(color: .black.opacity(0.1), radius: 10, y: 5)
+        }
+    }
+}
+#endif
+
 // MARK: - Sidebar (macOS only)
 
+#if os(macOS)
 struct SidebarView: View {
     @Binding var selectedDay: Int
 
@@ -130,16 +221,21 @@ struct SidebarView: View {
         .navigationTitle("TimesTable+")
     }
 }
+#endif
 
 // MARK: - Schedule View
 
 struct ScheduleView: View {
     @Binding var selectedDay: Int
+#if os(iOS)
+    @Binding var currentTab: iOSTab
+#endif
     @Query(sort: \SchoolClass.startTime) private var classes: [SchoolClass]
     @State private var showingAddClass = false
     @AppStorage("showWeekends") private var showWeekends = true
     @AppStorage("numberOfWeeks") private var numberOfWeeks = 1
     @AppStorage("repeatingWeeksEnabled") private var repeatingWeeksEnabled = false
+    @AppStorage("useBottomTabBar") private var useBottomTabBar = true
 
     @State private var selectedWeek: Int = 1
 
@@ -216,25 +312,55 @@ struct ScheduleView: View {
         .themeBackground()
         .navigationTitle(isLandscape ? "Week View" : "Schedule")
         .toolbar {
-            if !isLandscape {
 #if os(iOS)
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button { showingAddClass.toggle() } label: {
-                        Image(systemName: "plus.circle.fill")
-                            .font(.title3)
-                            .symbolRenderingMode(.hierarchical)
+            if !useBottomTabBar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Menu {
+                        Button {
+                            currentTab = .tasks
+                        } label: {
+                            Label("Tasks", systemImage: "checklist")
+                        }
+                        Button {
+                            currentTab = .grades
+                        } label: {
+                            Label("Grades", systemImage: "chart.bar.doc.horizontal")
+                        }
+                        Button {
+                            currentTab = .settings
+                        } label: {
+                            Label("Settings", systemImage: "gearshape.fill")
+                        }
+                    } label: {
+                        Image(systemName: "line.3.horizontal")
+                            .font(.title2)
+                            .foregroundStyle(
+                                LinearGradient(colors: [themeManager.accentColor, themeManager.accentColor.opacity(0.8)],
+                                               startPoint: .topLeading, endPoint: .bottomTrailing)
+                            )
                     }
                 }
+            }
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button { showingAddClass.toggle() } label: {
+                    Image(systemName: "plus.circle.fill")
+                        .font(.title3)
+                        .symbolRenderingMode(.hierarchical)
+                        .tutorialTarget(.addClass)
+                }
+            }
 #else
+            if !isLandscape {
                 ToolbarItem {
                     Button { showingAddClass.toggle() } label: {
                         Image(systemName: "plus.circle.fill")
                             .font(.title3)
                             .symbolRenderingMode(.hierarchical)
+                            .tutorialTarget(.addClass)
                     }
                 }
-#endif
             }
+#endif
         }
         .sheet(isPresented: $showingAddClass) {
             AddEditClassView(defaultWeekIndex: selectedWeek)
@@ -377,6 +503,7 @@ struct ScheduleView: View {
                 .padding(.horizontal)
                 .padding(.vertical, 10)
             }
+            .tutorialTarget(.homeNavigation)
             .onChange(of: selectedDay) { _, newVal in
                 withAnimation(AppTheme.smooth) {
                     proxy.scrollTo(newVal, anchor: .center)

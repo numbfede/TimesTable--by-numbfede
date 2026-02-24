@@ -4,6 +4,47 @@ import AppIntents
 import UniformTypeIdentifiers
 import PhotosUI
 
+// MARK: - Image Source Selection Modifier
+
+struct ImagePickersModifier: ViewModifier {
+    let themeManager: ThemeManager
+    @Binding var showingImagePickerOptions: Bool
+    @Binding var showingImagePicker: Bool
+    @Binding var showingFilePicker: Bool
+    @Binding var selectedPhotoItem: PhotosPickerItem?
+
+    func body(content: Content) -> some View {
+        content
+            // Photos App logic
+            .photosPicker(isPresented: $showingImagePicker, selection: $selectedPhotoItem, matching: .images)
+            .onChange(of: selectedPhotoItem) { _, newItem in
+                guard let newItem else { return }
+                Task {
+                    if let data = try? await newItem.loadTransferable(type: Data.self) {
+                        await MainActor.run {
+                            themeManager.backgroundImageData = data
+                            themeManager.notifyChange()
+                        }
+                    }
+                }
+            }
+            // Local Files/Finder logic
+            .fileImporter(isPresented: $showingFilePicker, allowedContentTypes: [.image], allowsMultipleSelection: false) { result in
+                if case .success(let urls) = result, let url = urls.first {
+                    // Try getting the security scoped resource if iOS sandboxed it
+                    let startedAccess = url.startAccessingSecurityScopedResource()
+                    defer {
+                        if startedAccess { url.stopAccessingSecurityScopedResource() }
+                    }
+                    if let data = try? Data(contentsOf: url) {
+                        themeManager.backgroundImageData = data
+                        themeManager.notifyChange()
+                    }
+                }
+            }
+    }
+}
+
 struct SettingsView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(ThemeManager.self) private var themeManager
@@ -19,6 +60,12 @@ struct SettingsView: View {
     @AppStorage("gradeRangeMax") private var gradeRangeMax = 10
     @AppStorage("notificationsEnabled") private var notificationsEnabled = false
     @AppStorage("iCloudEnabled") private var iCloudEnabled = false
+    @AppStorage("defaultClassDuration") private var defaultClassDuration = 60
+    @AppStorage("defaultStartTime") private var defaultStartTime = 480
+    @AppStorage("useBottomTabBar") private var useBottomTabBar = true
+
+    @AppStorage("hasSeenWelcome") private var hasSeenWelcome = true
+    @AppStorage("hasSeenTutorial") private var hasSeenTutorial = true
 
     @ObservedObject private var notifManager = NotificationManager.shared
 
@@ -31,19 +78,35 @@ struct SettingsView: View {
     @State private var presetToDelete: ClassPreset?
     @State private var showingDeletePreset = false
     
+    // Easter Egg Dev Mode
+    @State private var devModeTaps = 0
+    @State private var showingDevAlert = false
+    
     // Custom theme pickers state
+    @State private var showingImagePickerOptions = false
     @State private var showingImagePicker = false
+    @State private var showingFilePicker = false
     @State private var selectedPhotoItem: PhotosPickerItem?
 
     var body: some View {
 #if os(macOS)
         macOSSettings
-            .photosPicker(isPresented: $showingImagePicker, selection: $selectedPhotoItem, matching: .images)
-            .onChange(of: selectedPhotoItem) { _, newItem in handlePhotoSelection(newItem) }
+            .modifier(ImagePickersModifier(
+                themeManager: themeManager,
+                showingImagePickerOptions: $showingImagePickerOptions,
+                showingImagePicker: $showingImagePicker,
+                showingFilePicker: $showingFilePicker,
+                selectedPhotoItem: $selectedPhotoItem
+            ))
 #else
         iOSSettings
-            .photosPicker(isPresented: $showingImagePicker, selection: $selectedPhotoItem, matching: .images)
-            .onChange(of: selectedPhotoItem) { _, newItem in handlePhotoSelection(newItem) }
+            .modifier(ImagePickersModifier(
+                themeManager: themeManager,
+                showingImagePickerOptions: $showingImagePickerOptions,
+                showingImagePicker: $showingImagePicker,
+                showingFilePicker: $showingFilePicker,
+                selectedPhotoItem: $selectedPhotoItem
+            ))
 #endif
     }
     
@@ -93,9 +156,11 @@ struct SettingsView: View {
                                 .buttonStyle(.bordered)
                                 .tint(.red)
                             }
-                            Button("Select Image...") {
-                                showingImagePicker = true
+                            Menu("Select Image...") {
+                                Button("Photos App") { showingImagePicker = true }
+                                Button("Files / Finder") { showingFilePicker = true }
                             }
+                            .menuStyle(.borderlessButton)
                             .buttonStyle(.borderedProminent)
                         }
                     }
@@ -103,6 +168,28 @@ struct SettingsView: View {
 
                 settingsGroup(title: String(localized: "Schedule"), icon: "calendar", iconColors: [.blue, .cyan]) {
                     Toggle("Show Weekends", isOn: $showWeekends)
+                    Divider()
+                    HStack {
+                        Text("Default Start Time")
+                        Spacer()
+                        Picker("", selection: $defaultStartTime) {
+                            ForEach(Array(stride(from: 480, through: 690, by: 30)), id: \.self) { mins in
+                                Text(timeString(from: mins)).tag(mins)
+                            }
+                        }
+                        .labelsHidden()
+                    }
+                    Divider()
+                    HStack {
+                        Text("Default Class Duration")
+                        Spacer()
+                        Picker("", selection: $defaultClassDuration) {
+                            ForEach(Array(stride(from: 30, through: 240, by: 30)), id: \.self) { mins in
+                                Text(durationString(from: mins)).tag(mins)
+                            }
+                        }
+                        .labelsHidden()
+                    }
                     Divider()
                     Toggle("Repeating Weeks", isOn: $repeatingWeeksEnabled)
                     if repeatingWeeksEnabled {
@@ -238,6 +325,27 @@ struct SettingsView: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
+
+                settingsGroup(title: "About", icon: "info.circle.fill", iconColors: [.gray, .secondary]) {
+                    HStack {
+                        Spacer()
+                        VStack(spacing: 4) {
+                            Text("TimesTable+")
+                                .font(.headline)
+                            Text("Version 1.0")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            devModeTaps += 1
+                            if devModeTaps >= 10 {
+                                resetOnboarding()
+                            }
+                        }
+                        Spacer()
+                    }
+                }
             }
             .padding(24)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -300,6 +408,8 @@ struct SettingsView: View {
                 }
                 ColorPicker("Accent Color", selection: Bindable(themeManager).accentColor)
                 
+                Toggle("Use Bottom Tab Bar", isOn: $useBottomTabBar)
+                
                 if themeManager.themeMode == .custom {
                     Text("Custom Theme Options")
                         .font(.headline)
@@ -321,9 +431,11 @@ struct SettingsView: View {
                             .buttonStyle(.bordered)
                             .tint(.red)
                         }
-                        Button("Select...") {
-                            showingImagePicker = true
+                        Menu("Select...") {
+                            Button("Photos App") { showingImagePicker = true }
+                            Button("Files / Finder") { showingFilePicker = true }
                         }
+                        .menuStyle(.automatic)
                         .buttonStyle(.borderedProminent)
                     }
                 }
@@ -333,6 +445,19 @@ struct SettingsView: View {
 
             Section {
                 Toggle("Show Weekends", isOn: $showWeekends)
+                
+                Picker("Default Start Time", selection: $defaultStartTime) {
+                    ForEach(Array(stride(from: 480, through: 690, by: 30)), id: \.self) { mins in
+                        Text(timeString(from: mins)).tag(mins)
+                    }
+                }
+                
+                Picker("Default Class Duration", selection: $defaultClassDuration) {
+                    ForEach(Array(stride(from: 30, through: 240, by: 30)), id: \.self) { mins in
+                        Text(durationString(from: mins)).tag(mins)
+                    }
+                }
+                
                 Toggle("Repeating Weeks", isOn: $repeatingWeeksEnabled)
                 if repeatingWeeksEnabled {
                     HStack {
@@ -503,12 +628,35 @@ struct SettingsView: View {
             } footer: {
                 Text("This will permanently delete all classes and tasks.")
             }
+            
+            Section {
+                VStack(spacing: 4) {
+                    Text("TimesTable+")
+                        .font(.headline)
+                        .foregroundStyle(.primary)
+                    Text("Version 1.0")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                .frame(maxWidth: .infinity)
+                .listRowBackground(Color.clear)
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    devModeTaps += 1
+                    if devModeTaps >= 10 {
+                        resetOnboarding()
+                    }
+                }
+            }
         }
         .scrollContentBackground(.hidden)
         .themeBackground(ignoreImage: true)
         .listRowBackground(themeManager.themeMode == .custom ? themeManager.customButtonColor : Color(uiColor: .secondarySystemGroupedBackground))
         .foregroundStyle(themeManager.themeMode == .custom ? themeManager.customIconColor : .primary)
         .navigationTitle("Settings")
+#if os(iOS)
+        .safeAreaPadding(.bottom, useBottomTabBar ? 80 : 0)
+#endif
         .sheet(isPresented: $showingExportSheet) {
             if let url = exportURL {
                 ShareSheet(url: url)
@@ -538,10 +686,36 @@ struct SettingsView: View {
         } message: {
             Text(importErrorMessage)
         }
+        .alert(String(localized: "Developer Mode"), isPresented: $showingDevAlert) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(String(localized: "App onboarding flags have been reset. Close and reopen the app to view the Welcome Screen!"))
+        }
     }
 #endif
 
     // MARK: - Helpers
+
+    private func resetOnboarding() {
+        hasSeenWelcome = false
+        hasSeenTutorial = false
+        devModeTaps = 0
+        showingDevAlert = true
+    }
+
+    private func timeString(from minutes: Int) -> String {
+        let hour = minutes / 60
+        let min = minutes % 60
+        return String(format: "%02d:%02d", hour, min)
+    }
+
+    private func durationString(from minutes: Int) -> String {
+        let hour = minutes / 60
+        let min = minutes % 60
+        if hour == 0 { return "\(min) min" }
+        if min == 0 { return "\(hour) hr" }
+        return "\(hour) hr \(min) min"
+    }
 
     private func resetAll() {
         notifManager.removeAllNotifications()
