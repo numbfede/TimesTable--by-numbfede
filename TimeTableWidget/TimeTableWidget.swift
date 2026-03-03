@@ -224,7 +224,7 @@ struct TodayScheduleWidgetView: View {
         ZStack(alignment: .topLeading) {
             Color(white: 0.1)
             
-            VStack(alignment: .leading, spacing: 10) {
+            VStack(alignment: .leading, spacing: 6) {
                 Text("Oggi")
                     .font(.subheadline.bold())
                     .foregroundColor(.white)
@@ -243,7 +243,7 @@ struct TodayScheduleWidgetView: View {
                 } else {
                     let classesToShow = computeVisibleClasses(for: family)
                     
-                    VStack(spacing: 6) {
+                    VStack(spacing: 4) {
                         ForEach(classesToShow) { cls in
                             let isActive = cls.id == entry.currentClass?.id
                             let classColor = Color(hex: cls.hexColor) ?? .orange
@@ -256,8 +256,8 @@ struct TodayScheduleWidgetView: View {
                                     .lineLimit(1)
                                 Spacer()
                             }
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 10)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 6)
                             // If active, use its color. Otherwise use standard dark gray
                             .background(isActive ? classColor : Color(white: 0.2))
                             // If active and color is bright we might want dark text, but white usually looks good

@@ -28,9 +28,12 @@ final class NotificationManager: ObservableObject {
         }
     }
 
-    /// Schedule a 15-min-before notification for a class on a given weekday.
+    /// Schedule a notification for a class on a given weekday.
     func scheduleNotification(for schoolClass: SchoolClass) {
         guard isAuthorized else { return }
+
+        let defaults = UserDefaults.standard
+        let offset = defaults.object(forKey: "reminderOffset") as? Int ?? 10
 
         let center = UNUserNotificationCenter.current()
         let id = schoolClass.id.uuidString
@@ -39,30 +42,39 @@ final class NotificationManager: ObservableObject {
         center.removePendingNotificationRequests(withIdentifiers: [id])
 
         let content = UNMutableNotificationContent()
-        content.title = schoolClass.name
+        content.title = String(localized: "La tua lezione di \(schoolClass.name) sta per iniziare!")
         var locationParts: [String] = []
-        if let room = schoolClass.room, !room.isEmpty { locationParts.append("Room: \(room)") }
+        if let room = schoolClass.room, !room.isEmpty { locationParts.append(String(localized: "Room: \(room)")) }
         if let teacher = schoolClass.teacher, !teacher.isEmpty { locationParts.append(teacher) }
         content.body = locationParts.isEmpty
-            ? "Starting in 15 minutes"
-            : locationParts.joined(separator: " · ") + " — in 15 min"
+            ? String(localized: "Tra \(offset) minuti")
+            : locationParts.joined(separator: " · ") + " — " + String(localized: "Tra \(offset) minuti")
         content.sound = .default
 
-        // Build trigger: weekday + time - 15 min
+        // Build trigger: weekday + time - offset min
         let cal = Calendar.current
         let startComponents = cal.dateComponents([.hour, .minute], from: schoolClass.startTime)
         guard let hour = startComponents.hour, let minute = startComponents.minute else { return }
 
-        var notifMinute = minute - 15
+        var notifMinute = minute - offset
         var notifHour = hour
-        if notifMinute < 0 {
+        while notifMinute < 0 {
             notifMinute += 60
             notifHour -= 1
         }
-        if notifHour < 0 { return }
+        var weekdayOffset = 0
+        if notifHour < 0 {
+            notifHour += 24
+            weekdayOffset = -1
+        }
 
         // dayOfWeek: 1=Mon→2, 2=Tue→3 ... 7=Sun→1 (Calendar weekday)
-        let calWeekday = schoolClass.dayOfWeek == 7 ? 1 : schoolClass.dayOfWeek + 1
+        var calWeekday = schoolClass.dayOfWeek == 7 ? 1 : schoolClass.dayOfWeek + 1
+        
+        if weekdayOffset < 0 {
+            calWeekday -= 1
+            if calWeekday < 1 { calWeekday = 7 }
+        }
 
         var triggerComponents = DateComponents()
         triggerComponents.weekday = calWeekday

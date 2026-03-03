@@ -293,7 +293,7 @@ struct SidebarView: View {
                 }
             }
             NavigationLink {
-                SettingsView(currentTab: $currentTab)
+                SettingsView()
             } label: {
                 Label { Text("Settings") } icon: {
                     Image(systemName: "gearshape.fill")
@@ -397,7 +397,9 @@ struct ScheduleView: View {
         }
         .themeBackground()
         .navigationTitle(isLandscape ? "Week View" : "Schedule")
+#if os(iOS)
         .globalHamburgerMenu(currentTab: $currentTab)
+#endif
         .toolbar {
 #if os(iOS)
             ToolbarItem(placement: .navigationBarTrailing) {

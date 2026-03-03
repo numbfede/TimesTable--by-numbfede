@@ -63,6 +63,7 @@ struct SettingsView: View {
     @AppStorage("averageType") private var averageTypeRaw = AverageType.arithmetic.rawValue
     @AppStorage("gradeRangeMax") private var gradeRangeMax = 10
     @AppStorage("notificationsEnabled") private var notificationsEnabled = false
+    @AppStorage("reminderOffset") private var reminderOffset = 10
     @AppStorage("iCloudEnabled") private var iCloudEnabled = false
     @AppStorage("defaultClassDuration") private var defaultClassDuration = 60
     @AppStorage("defaultStartTime") private var defaultStartTime = 480
@@ -557,10 +558,27 @@ struct SettingsView: View {
                             notifManager.removeAllNotifications()
                         }
                     }
-                if notificationsEnabled && !notifManager.isAuthorized {
-                    Label("Permission denied. Enable in Settings.", systemImage: "exclamationmark.triangle")
-                        .foregroundStyle(.orange)
-                        .font(.caption)
+                if notificationsEnabled {
+                    Stepper(value: $reminderOffset, in: 1...30) {
+                        HStack {
+                            Text("Notify before")
+                            Spacer()
+                            Text("\(reminderOffset) min")
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                    .onChange(of: reminderOffset) { _, _ in
+                        Task {
+                            if notifManager.isAuthorized {
+                                classes.forEach { notifManager.scheduleNotification(for: $0) }
+                            }
+                        }
+                    }
+                    if !notifManager.isAuthorized {
+                        Label("Permission denied. Enable in Settings.", systemImage: "exclamationmark.triangle")
+                            .foregroundStyle(.orange)
+                            .font(.caption)
+                    }
                 }
             } header: {
                 Label("Notifications", systemImage: "bell.badge.fill")
