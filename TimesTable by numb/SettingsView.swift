@@ -4,7 +4,11 @@ import AppIntents
 import UniformTypeIdentifiers
 import PhotosUI
 
-// MARK: - Image Source Selection Modifier
+// Mode for the single file picker (SwiftUI only supports one .fileImporter per view tree)
+enum FilePickerMode {
+    case backgroundImage
+    case importJSON
+}
 
 struct ImagePickersModifier: ViewModifier {
     let themeManager: ThemeManager
@@ -25,20 +29,6 @@ struct ImagePickersModifier: ViewModifier {
                             themeManager.backgroundImageData = data
                             themeManager.notifyChange()
                         }
-                    }
-                }
-            }
-            // Local Files/Finder logic
-            .fileImporter(isPresented: $showingFilePicker, allowedContentTypes: [.image], allowsMultipleSelection: false) { result in
-                if case .success(let urls) = result, let url = urls.first {
-                    // Try getting the security scoped resource if iOS sandboxed it
-                    let startedAccess = url.startAccessingSecurityScopedResource()
-                    defer {
-                        if startedAccess { url.stopAccessingSecurityScopedResource() }
-                    }
-                    if let data = try? Data(contentsOf: url) {
-                        themeManager.backgroundImageData = data
-                        themeManager.notifyChange()
                     }
                 }
             }
@@ -82,6 +72,7 @@ struct SettingsView: View {
     @State private var importErrorMessage = ""
     @State private var presetToDelete: ClassPreset?
     @State private var showingDeletePreset = false
+    @State private var filePickerMode: FilePickerMode = .importJSON
     
     // Easter Egg Dev Mode
     @State private var devModeTaps = 0
@@ -163,7 +154,7 @@ struct SettingsView: View {
                             }
                             Menu("Select Image...") {
                                 Button("Photos App") { showingImagePicker = true }
-                                Button("Files / Finder") { showingFilePicker = true }
+                                Button("Files / Finder") { filePickerMode = .backgroundImage; showingFilePicker = true }
                             }
                             .menuStyle(.borderlessButton)
                             .buttonStyle(.borderedProminent)
@@ -302,7 +293,7 @@ struct SettingsView: View {
                     .buttonStyle(.link)
                     Divider()
                     Button {
-                        showingImportPicker = true
+                        filePickerMode = .importJSON; showingFilePicker = true
                     } label: {
                         Label("Import Timetable", systemImage: "square.and.arrow.down")
                     }
@@ -362,16 +353,26 @@ struct SettingsView: View {
             }
         }
         .fileImporter(
-            isPresented: $showingImportPicker,
-            allowedContentTypes: [UTType.json],
+            isPresented: $showingFilePicker,
+            allowedContentTypes: filePickerMode == .importJSON ? [UTType.json] : [UTType.image],
             allowsMultipleSelection: false
         ) { result in
             if case .success(let urls) = result, let url = urls.first {
-                do {
-                    try ExportManager.shared.importFrom(url: url, context: modelContext)
-                } catch {
-                    importErrorMessage = error.localizedDescription
-                    showingImportError = true
+                let startedAccess = url.startAccessingSecurityScopedResource()
+                defer { if startedAccess { url.stopAccessingSecurityScopedResource() } }
+                
+                if filePickerMode == .importJSON {
+                    do {
+                        try ExportManager.shared.importFrom(url: url, context: modelContext)
+                    } catch {
+                        importErrorMessage = error.localizedDescription
+                        showingImportError = true
+                    }
+                } else {
+                    if let data = try? Data(contentsOf: url) {
+                        themeManager.backgroundImageData = data
+                        themeManager.notifyChange()
+                    }
                 }
             }
         }
@@ -438,7 +439,7 @@ struct SettingsView: View {
                         }
                         Menu("Select...") {
                             Button("Photos App") { showingImagePicker = true }
-                            Button("Files / Finder") { showingFilePicker = true }
+                            Button("Files / Finder") { filePickerMode = .backgroundImage; showingFilePicker = true }
                         }
                         .menuStyle(.automatic)
                         .buttonStyle(.borderedProminent)
@@ -610,7 +611,7 @@ struct SettingsView: View {
                     Label("Export Timetable", systemImage: "square.and.arrow.up")
                 }
                 Button {
-                    showingImportPicker = true
+                    filePickerMode = .importJSON; showingFilePicker = true
                 } label: {
                     Label("Import Timetable", systemImage: "square.and.arrow.down")
                 }
@@ -686,16 +687,26 @@ struct SettingsView: View {
             }
         }
         .fileImporter(
-            isPresented: $showingImportPicker,
-            allowedContentTypes: [UTType.json],
+            isPresented: $showingFilePicker,
+            allowedContentTypes: filePickerMode == .importJSON ? [UTType.json] : [UTType.image],
             allowsMultipleSelection: false
         ) { result in
             if case .success(let urls) = result, let url = urls.first {
-                do {
-                    try ExportManager.shared.importFrom(url: url, context: modelContext)
-                } catch {
-                    importErrorMessage = error.localizedDescription
-                    showingImportError = true
+                let startedAccess = url.startAccessingSecurityScopedResource()
+                defer { if startedAccess { url.stopAccessingSecurityScopedResource() } }
+                
+                if filePickerMode == .importJSON {
+                    do {
+                        try ExportManager.shared.importFrom(url: url, context: modelContext)
+                    } catch {
+                        importErrorMessage = error.localizedDescription
+                        showingImportError = true
+                    }
+                } else {
+                    if let data = try? Data(contentsOf: url) {
+                        themeManager.backgroundImageData = data
+                        themeManager.notifyChange()
+                    }
                 }
             }
         }
