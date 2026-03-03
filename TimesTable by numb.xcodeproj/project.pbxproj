@@ -7,10 +7,23 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		3FEBEF2B2F572A8C009BC608 /* TimeTable+.icon in Resources */ = {isa = PBXBuildFile; fileRef = 3FEBEF2A2F572A8C009BC608 /* TimeTable+.icon */; };
+		1C7B49BFA53E9BC2C17E3B9D /* TimeTable+.icon in Resources */ = {isa = PBXBuildFile; fileRef = BBFE4417816D86F7C3959374 /* TimeTable+.icon */; };
+		20DF41AAB0FC52D94DE0B0BD /* TimeTable+.icon in Resources */ = {isa = PBXBuildFile; fileRef = BBFE4417816D86F7C3959374 /* TimeTable+.icon */; };
+		35244E11B968C21EC0C344F2 /* TimeTable+.icon in Resources */ = {isa = PBXBuildFile; fileRef = BBFE4417816D86F7C3959374 /* TimeTable+.icon */; };
+		3FA3926C2F4DD5C900698CAB /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3FA3926B2F4DD5C900698CAB /* WidgetKit.framework */; };
+		3FA3926E2F4DD5C900698CAB /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3FA3926D2F4DD5C900698CAB /* SwiftUI.framework */; };
+		3FA3927B2F4DD5CA00698CAB /* TimeTableWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 3FA392692F4DD5C900698CAB /* TimeTableWidgetExtension.appex */; platformFilter = ios; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		6237427987FE3188EF6BF8C7 /* TimeTable+.icon in Resources */ = {isa = PBXBuildFile; fileRef = BBFE4417816D86F7C3959374 /* TimeTable+.icon */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
+		3FA392792F4DD5CA00698CAB /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 3FEE73852F45AE5300F94275 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 3FA392682F4DD5C900698CAB;
+			remoteInfo = TimeTableWidgetExtension;
+		};
 		3FEE739F2F45AE5400F94275 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 3FEE73852F45AE5300F94275 /* Project object */;
@@ -27,14 +40,39 @@
 		};
 /* End PBXContainerItemProxy section */
 
+/* Begin PBXCopyFilesBuildPhase section */
+		3FA392802F4DD5CA00698CAB /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				3FA3927B2F4DD5CA00698CAB /* TimeTableWidgetExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
-		3FEBEF2A2F572A8C009BC608 /* TimeTable+.icon */ = {isa = PBXFileReference; lastKnownFileType = folder.iconcomposer.icon; path = "TimeTable+.icon"; sourceTree = "<group>"; };
+		3FA392692F4DD5C900698CAB /* TimeTableWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = TimeTableWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		3FA3926B2F4DD5C900698CAB /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
+		3FA3926D2F4DD5C900698CAB /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
+		3FA392822F4DD66D00698CAB /* TimeTableWidgetExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = TimeTableWidgetExtension.entitlements; sourceTree = "<group>"; };
 		3FEE738D2F45AE5300F94275 /* TimesTable by numb.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "TimesTable by numb.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		3FEE739E2F45AE5400F94275 /* TimesTable by numbTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "TimesTable by numbTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		3FEE73A82F45AE5400F94275 /* TimesTable by numbUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "TimesTable by numbUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
+		BBFE4417816D86F7C3959374 /* TimeTable+.icon */ = {isa = PBXFileReference; lastKnownFileType = folder; name = "TimeTable+.icon"; path = "TimesTable by numb/TimeTable+.icon"; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		3FA3927F2F4DD5CA00698CAB /* Exceptions for "TimeTableWidget" folder in "TimeTableWidgetExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 3FA392682F4DD5C900698CAB /* TimeTableWidgetExtension */;
+		};
 		3FEE73B02F45AE5400F94275 /* Exceptions for "TimesTable by numb" folder in "TimesTable by numb" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
@@ -45,6 +83,14 @@
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
+		3FA3926F2F4DD5C900698CAB /* TimeTableWidget */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				3FA3927F2F4DD5CA00698CAB /* Exceptions for "TimeTableWidget" folder in "TimeTableWidgetExtension" target */,
+			);
+			path = TimeTableWidget;
+			sourceTree = "<group>";
+		};
 		3FEE738F2F45AE5300F94275 /* TimesTable by numb */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
@@ -66,6 +112,15 @@
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		3FA392662F4DD5C900698CAB /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				3FA3926E2F4DD5C900698CAB /* SwiftUI.framework in Frameworks */,
+				3FA3926C2F4DD5C900698CAB /* WidgetKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		3FEE738A2F45AE5300F94275 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -90,14 +145,26 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		3FA3926A2F4DD5C900698CAB /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				3FA3926B2F4DD5C900698CAB /* WidgetKit.framework */,
+				3FA3926D2F4DD5C900698CAB /* SwiftUI.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 		3FEE73842F45AE5300F94275 = {
 			isa = PBXGroup;
 			children = (
-				3FEBEF2A2F572A8C009BC608 /* TimeTable+.icon */,
+				3FA392822F4DD66D00698CAB /* TimeTableWidgetExtension.entitlements */,
 				3FEE738F2F45AE5300F94275 /* TimesTable by numb */,
 				3FEE73A12F45AE5400F94275 /* TimesTable by numbTests */,
 				3FEE73AB2F45AE5400F94275 /* TimesTable by numbUITests */,
+				3FA3926F2F4DD5C900698CAB /* TimeTableWidget */,
+				3FA3926A2F4DD5C900698CAB /* Frameworks */,
 				3FEE738E2F45AE5300F94275 /* Products */,
+				BBFE4417816D86F7C3959374 /* TimeTable+.icon */,
 			);
 			sourceTree = "<group>";
 		};
@@ -107,6 +174,7 @@
 				3FEE738D2F45AE5300F94275 /* TimesTable by numb.app */,
 				3FEE739E2F45AE5400F94275 /* TimesTable by numbTests.xctest */,
 				3FEE73A82F45AE5400F94275 /* TimesTable by numbUITests.xctest */,
+				3FA392692F4DD5C900698CAB /* TimeTableWidgetExtension.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -114,6 +182,28 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		3FA392682F4DD5C900698CAB /* TimeTableWidgetExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 3FA3927C2F4DD5CA00698CAB /* Build configuration list for PBXNativeTarget "TimeTableWidgetExtension" */;
+			buildPhases = (
+				3FA392652F4DD5C900698CAB /* Sources */,
+				3FA392662F4DD5C900698CAB /* Frameworks */,
+				3FA392672F4DD5C900698CAB /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				3FA3926F2F4DD5C900698CAB /* TimeTableWidget */,
+			);
+			name = TimeTableWidgetExtension;
+			packageProductDependencies = (
+			);
+			productName = TimeTableWidgetExtension;
+			productReference = 3FA392692F4DD5C900698CAB /* TimeTableWidgetExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 		3FEE738C2F45AE5300F94275 /* TimesTable by numb */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 3FEE73B12F45AE5400F94275 /* Build configuration list for PBXNativeTarget "TimesTable by numb" */;
@@ -121,10 +211,12 @@
 				3FEE73892F45AE5300F94275 /* Sources */,
 				3FEE738A2F45AE5300F94275 /* Frameworks */,
 				3FEE738B2F45AE5300F94275 /* Resources */,
+				3FA392802F4DD5CA00698CAB /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				3FA3927A2F4DD5CA00698CAB /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				3FEE738F2F45AE5300F94275 /* TimesTable by numb */,
@@ -192,6 +284,9 @@
 				LastSwiftUpdateCheck = 2620;
 				LastUpgradeCheck = 2620;
 				TargetAttributes = {
+					3FA392682F4DD5C900698CAB = {
+						CreatedOnToolsVersion = 26.2;
+					};
 					3FEE738C2F45AE5300F94275 = {
 						CreatedOnToolsVersion = 26.2;
 					};
@@ -222,16 +317,25 @@
 				3FEE738C2F45AE5300F94275 /* TimesTable by numb */,
 				3FEE739D2F45AE5400F94275 /* TimesTable by numbTests */,
 				3FEE73A72F45AE5400F94275 /* TimesTable by numbUITests */,
+				3FA392682F4DD5C900698CAB /* TimeTableWidgetExtension */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		3FA392672F4DD5C900698CAB /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				35244E11B968C21EC0C344F2 /* TimeTable+.icon in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		3FEE738B2F45AE5300F94275 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				3FEBEF2B2F572A8C009BC608 /* TimeTable+.icon in Resources */,
+				1C7B49BFA53E9BC2C17E3B9D /* TimeTable+.icon in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -239,6 +343,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				20DF41AAB0FC52D94DE0B0BD /* TimeTable+.icon in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -246,12 +351,20 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				6237427987FE3188EF6BF8C7 /* TimeTable+.icon in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		3FA392652F4DD5C900698CAB /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		3FEE73892F45AE5300F94275 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -276,6 +389,12 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		3FA3927A2F4DD5CA00698CAB /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			platformFilter = ios;
+			target = 3FA392682F4DD5C900698CAB /* TimeTableWidgetExtension */;
+			targetProxy = 3FA392792F4DD5CA00698CAB /* PBXContainerItemProxy */;
+		};
 		3FEE73A02F45AE5400F94275 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 3FEE738C2F45AE5300F94275 /* TimesTable by numb */;
@@ -289,18 +408,84 @@
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
+		3FA3927D2F4DD5CA00698CAB /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = TimeTableWidgetExtension.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = CCA5TNG9A9;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = TimeTableWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = TimeTableWidget;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.2;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "numbfede.TimesTable-by-numb.TimeTableWidget";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		3FA3927E2F4DD5CA00698CAB /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = TimeTableWidgetExtension.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = CCA5TNG9A9;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = TimeTableWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = TimeTableWidget;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.2;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "numbfede.TimesTable-by-numb.TimeTableWidget";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
 		3FEE73B22F45AE5400F94275 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = "TimeTable+";
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
+				CODE_SIGN_ENTITLEMENTS = "TimesTable by numb/TimesTable by numb.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = CCA5TNG9A9;
-				CODE_SIGN_ENTITLEMENTS = "TimesTable by numb/TimesTable by numb.entitlements";
-                                ENABLE_APP_SANDBOX = YES;
+				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
@@ -341,15 +526,14 @@
 		3FEE73B32F45AE5400F94275 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = "TimeTable+";
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
+				CODE_SIGN_ENTITLEMENTS = "TimesTable by numb/TimesTable by numb.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = CCA5TNG9A9;
-				CODE_SIGN_ENTITLEMENTS = "TimesTable by numb/TimesTable by numb.entitlements";
-                                ENABLE_APP_SANDBOX = YES;
+				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
@@ -612,6 +796,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		3FA3927C2F4DD5CA00698CAB /* Build configuration list for PBXNativeTarget "TimeTableWidgetExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				3FA3927D2F4DD5CA00698CAB /* Debug */,
+				3FA3927E2F4DD5CA00698CAB /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		3FEE73882F45AE5300F94275 /* Build configuration list for PBXProject "TimesTable by numb" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
