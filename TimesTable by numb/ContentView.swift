@@ -217,6 +217,7 @@ struct FloatingTabBar: View {
                     .contentShape(Capsule())
                 }
                 .buttonStyle(.plain)
+                .modifier(SettingsTutorialTarget(tab: tab))
             }
         }
         .background {
@@ -250,6 +251,18 @@ struct FloatingTabBar: View {
                 .fill(.clear)
         }
         .glassEffect(.regular.interactive(), in: .capsule)
+    }
+}
+
+private struct SettingsTutorialTarget: ViewModifier {
+    let tab: iOSTab
+    
+    func body(content: Content) -> some View {
+        if tab == .settings {
+            content.tutorialTarget(.settingsTutorial)
+        } else {
+            content
+        }
     }
 }
 #endif

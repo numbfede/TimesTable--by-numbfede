@@ -203,15 +203,19 @@ struct AddEditClassView: View {
                             .bold()
                             .padding(.horizontal, 12)
                             .padding(.vertical, 5)
-                            .background(
+                            .foregroundStyle(
                                 name.trimmingCharacters(in: .whitespaces).isEmpty
-                                    ? Color.secondary.opacity(0.3)
-                                    : previewColor,
-                                in: Capsule()
+                                    ? .secondary
+                                    : .primary
                             )
-                            .foregroundStyle(.white)
                     }
                     .buttonStyle(.plain)
+                    .glassEffect(
+                        name.trimmingCharacters(in: .whitespaces).isEmpty
+                            ? .regular.interactive()
+                            : .regular.tint(previewColor).interactive(),
+                        in: .capsule
+                    )
                     .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty)
                 }
             }
