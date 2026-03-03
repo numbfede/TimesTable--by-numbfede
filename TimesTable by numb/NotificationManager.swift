@@ -8,7 +8,6 @@ final class NotificationManager: ObservableObject {
 
     @Published var isAuthorized = false
 
-
     private init() {
         Task { await checkStatus() }
     }
@@ -30,9 +29,17 @@ final class NotificationManager: ObservableObject {
 
     /// Schedule a notification for a class on a given weekday.
     func scheduleNotification(for schoolClass: SchoolClass) {
-        guard isAuthorized else { return }
+        guard isAuthorized else {
+            print("🔕 [NotifManager] Not authorized — skipping \(schoolClass.name)")
+            return
+        }
 
         let defaults = UserDefaults.standard
+        guard defaults.bool(forKey: "notificationsEnabled") else {
+            print("🔕 [NotifManager] Notifications disabled in settings — skipping \(schoolClass.name)")
+            return
+        }
+
         let offset = defaults.object(forKey: "reminderOffset") as? Int ?? 10
 
         let center = UNUserNotificationCenter.current()
@@ -54,7 +61,10 @@ final class NotificationManager: ObservableObject {
         // Build trigger: weekday + time - offset min
         let cal = Calendar.current
         let startComponents = cal.dateComponents([.hour, .minute], from: schoolClass.startTime)
-        guard let hour = startComponents.hour, let minute = startComponents.minute else { return }
+        guard let hour = startComponents.hour, let minute = startComponents.minute else {
+            print("⚠️ [NotifManager] Could not extract time components for \(schoolClass.name)")
+            return
+        }
 
         var notifMinute = minute - offset
         var notifHour = hour
@@ -70,7 +80,7 @@ final class NotificationManager: ObservableObject {
 
         // dayOfWeek: 1=Mon→2, 2=Tue→3 ... 7=Sun→1 (Calendar weekday)
         var calWeekday = schoolClass.dayOfWeek == 7 ? 1 : schoolClass.dayOfWeek + 1
-        
+
         if weekdayOffset < 0 {
             calWeekday -= 1
             if calWeekday < 1 { calWeekday = 7 }
@@ -83,7 +93,34 @@ final class NotificationManager: ObservableObject {
 
         let trigger = UNCalendarNotificationTrigger(dateMatching: triggerComponents, repeats: true)
         let request = UNNotificationRequest(identifier: id, content: content, trigger: trigger)
-        center.add(request)
+
+        print("📅 [NotifManager] Scheduling '\(schoolClass.name)' → weekday \(calWeekday), \(notifHour):\(String(format: "%02d", notifMinute)) (offset -\(offset)min)")
+
+        center.add(request) { error in
+            if let error = error {
+                print("❌ [NotifManager] Failed to add notification: \(error.localizedDescription)")
+            } else {
+                print("✅ [NotifManager] Notification scheduled for '\(schoolClass.name)'")
+            }
+        }
+    }
+
+    /// Reschedule all notifications (called after class create/edit/delete)
+    func rescheduleAll(classes: [SchoolClass]) {
+        let center = UNUserNotificationCenter.current()
+        center.removeAllPendingNotificationRequests()
+        
+        guard isAuthorized else { return }
+        guard UserDefaults.standard.bool(forKey: "notificationsEnabled") else { return }
+        
+        for c in classes {
+            scheduleNotification(for: c)
+        }
+        
+        // Debug: print pending count
+        center.getPendingNotificationRequests { requests in
+            print("📋 [NotifManager] Total pending notifications: \(requests.count)")
+        }
     }
 
     func removeNotification(for schoolClass: SchoolClass) {

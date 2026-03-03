@@ -6,6 +6,7 @@ struct AddEditClassView: View {
     @Environment(\.modelContext) private var modelContext
 
     @Query(sort: \ClassPreset.name) private var presets: [ClassPreset]
+    @Query private var allClasses: [SchoolClass]
 
     var existingClass: SchoolClass?
     var defaultWeekIndex: Int = 1
@@ -469,6 +470,9 @@ struct AddEditClassView: View {
                 modelContext.insert(preset)
             }
         }
+
+        // Reschedule notifications to include this class
+        NotificationManager.shared.rescheduleAll(classes: allClasses)
 
         dismiss()
     }

@@ -158,6 +158,7 @@ struct ClassDetailView: View {
         }
         .confirmationDialog("Delete this class?", isPresented: $showingDeleteConfirm, titleVisibility: .visible) {
             Button("Delete", role: .destructive) {
+                NotificationManager.shared.removeNotification(for: schoolClass)
                 modelContext.delete(schoolClass)
                 dismiss()
             }

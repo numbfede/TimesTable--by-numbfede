@@ -48,6 +48,13 @@ struct TimesTableApp: App {
                 .tint(themeManager.accentColor)
                 .preferredColorScheme(colorScheme)
                 .environment(themeManager)
+                .onAppear {
+                    // Reschedule notifications on every app launch
+                    Task {
+                        await NotificationManager.shared.checkStatus()
+                    }
+                }
+                .modifier(NotificationRescheduler())
         }
         .modelContainer(sharedModelContainer)
     }
@@ -73,5 +80,21 @@ private func destroyOldStore(schema: Schema) {
     ]
     for url in candidates.compactMap({ $0 }) {
         try? FileManager.default.removeItem(at: url)
+    }
+}
+
+// MARK: - Notification Rescheduler (reschedules on every app launch)
+
+struct NotificationRescheduler: ViewModifier {
+    @Query private var classes: [SchoolClass]
+    
+    func body(content: Content) -> some View {
+        content
+            .onAppear {
+                // Small delay so the NotificationManager has time to check auth status
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                    NotificationManager.shared.rescheduleAll(classes: classes)
+                }
+            }
     }
 }
