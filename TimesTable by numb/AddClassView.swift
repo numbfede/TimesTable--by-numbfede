@@ -201,21 +201,17 @@ struct AddEditClassView: View {
                     } label: {
                         Text("Save")
                             .bold()
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 5)
-                            .foregroundStyle(
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 6)
+                            .foregroundStyle(.white)
+                            .background(
                                 name.trimmingCharacters(in: .whitespaces).isEmpty
-                                    ? .secondary
-                                    : .primary
+                                    ? Color.secondary.opacity(0.3)
+                                    : previewColor,
+                                in: Capsule()
                             )
                     }
                     .buttonStyle(.plain)
-                    .glassEffect(
-                        name.trimmingCharacters(in: .whitespaces).isEmpty
-                            ? .regular.interactive()
-                            : .regular.tint(previewColor).interactive(),
-                        in: .capsule
-                    )
                     .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty)
                 }
             }

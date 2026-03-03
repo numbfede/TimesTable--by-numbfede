@@ -43,11 +43,23 @@ struct WelcomeView: View {
                     ).tag(2)
                 }
 #if os(iOS)
-                .tabViewStyle(.page(indexDisplayMode: .always))
+                .tabViewStyle(.page(indexDisplayMode: .never))
 #endif
                 .frame(maxHeight: 450)
                 
                 Spacer()
+                
+                // Page dots
+                HStack(spacing: 8) {
+                    ForEach(0..<3) { i in
+                        Circle()
+                            .fill(i == currentSlide ? Color.white : Color.white.opacity(0.3))
+                            .frame(width: 8, height: 8)
+                            .scaleEffect(i == currentSlide ? 1.2 : 1.0)
+                            .animation(.spring(response: 0.3), value: currentSlide)
+                    }
+                }
+                .padding(.bottom, 16)
                 
                 // Animated Next/Get Started Button
                 nextButton
