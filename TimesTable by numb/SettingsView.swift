@@ -326,7 +326,7 @@ struct SettingsView: View {
                     HStack {
                         Spacer()
                         VStack(spacing: 4) {
-                            Text("TimesTable+")
+                            Text("TimeTable+")
                                 .font(.headline)
                             Text("Version 1.0")
                                 .font(.caption)
@@ -654,7 +654,7 @@ struct SettingsView: View {
             
             Section {
                 VStack(spacing: 4) {
-                    Text("TimesTable+")
+                    Text("TimeTable+")
                         .font(.headline)
                         .foregroundStyle(.primary)
                     Text("Version 1.0")

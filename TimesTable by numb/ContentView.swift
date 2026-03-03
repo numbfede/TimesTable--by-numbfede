@@ -316,7 +316,7 @@ struct SidebarView: View {
                 }
             }
         }
-        .navigationTitle("TimesTable+")
+        .navigationTitle("TimeTable+")
     }
 }
 #endif

@@ -23,7 +23,7 @@ struct WelcomeView: View {
                 TabView(selection: $currentSlide) {
                     onboardingSlide(
                         icon: "calendar.badge.clock",
-                        title: String(localized: "Welcome to TimesTable+"),
+                        title: String(localized: "Welcome to TimeTable+"),
                         description: String(localized: "Your premium schedule, beautifully organized.\nKeep track of your classes and study hours with elegance."),
                         color: .blue
                     ).tag(0)
