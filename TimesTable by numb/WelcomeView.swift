@@ -111,17 +111,7 @@ struct WelcomeView: View {
                 .lineSpacing(4)
         }
         .padding(40)
-        // Liquid Glass Card
-        .background(
-            RoundedRectangle(cornerRadius: 30, style: .continuous)
-                .fill(.ultraThinMaterial)
-                .shadow(color: .black.opacity(0.2), radius: 20, x: 0, y: 10)
-        )
-        // Border glowing rim
-        .overlay(
-            RoundedRectangle(cornerRadius: 30, style: .continuous)
-                .stroke(LinearGradient(colors: [.white.opacity(0.5), .white.opacity(0.1)], startPoint: .topLeading, endPoint: .bottomTrailing), lineWidth: 1)
-        )
+        .glassEffect(.regular.interactive(), in: .rect(cornerRadius: 30))
         .padding(.horizontal, 20)
     }
     
@@ -147,17 +137,7 @@ struct WelcomeView: View {
             .foregroundStyle(.white)
             .padding(.vertical, 18)
             .frame(maxWidth: .infinity)
-            // Liquid Glass Button
-            .background(
-                Capsule()
-                    .fill(Color.white.opacity(0.2)) // Translucent base
-                    .background(Capsule().fill(.ultraThinMaterial))
-            )
-            .overlay(
-                Capsule()
-                    .stroke(LinearGradient(colors: [.white.opacity(0.8), .white.opacity(0.2)], startPoint: .topLeading, endPoint: .bottomTrailing), lineWidth: 1.5)
-            )
-            .shadow(color: .white.opacity(0.1), radius: 10, y: 5)
+            .glassEffect(.regular.interactive(), in: .capsule)
         }
         .contentShape(Capsule())
     }

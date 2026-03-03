@@ -83,11 +83,7 @@ struct GlassCard: ViewModifier {
 
     func body(content: Content) -> some View {
         content
-            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: cornerRadius))
-            .overlay(
-                RoundedRectangle(cornerRadius: cornerRadius)
-                    .strokeBorder(Color.white.opacity(0.15), lineWidth: 0.5)
-            )
+            .glassEffect(.regular.interactive(), in: .rect(cornerRadius: cornerRadius))
     }
 }
 

@@ -247,9 +247,9 @@ struct FloatingTabBar: View {
         .padding(6)
         .background {
             Capsule()
-                .fill(.ultraThinMaterial)
-                .shadow(color: .black.opacity(0.1), radius: 10, y: 5)
+                .fill(.clear)
         }
+        .glassEffect(.regular.interactive(), in: .capsule)
     }
 }
 #endif
@@ -674,15 +674,20 @@ struct ClassRow: View {
             .padding(.horizontal, 12)
             .padding(.vertical, 14)
         }
-        .background(
-            RoundedRectangle(cornerRadius: AppTheme.cardRadius)
-                .fill(themeManager.themeMode == .custom ? themeManager.customButtonColor : schoolClass.color.opacity(0.08))
-                .overlay(
-                    RoundedRectangle(cornerRadius: AppTheme.cardRadius)
-                        .strokeBorder(schoolClass.color.opacity(0.15), lineWidth: 0.5)
-                )
-        )
-        .clipShape(RoundedRectangle(cornerRadius: AppTheme.cardRadius))
+        .background {
+            if themeManager.themeMode == .custom {
+                RoundedRectangle(cornerRadius: AppTheme.cardRadius)
+                    .fill(themeManager.customButtonColor)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: AppTheme.cardRadius)
+                            .strokeBorder(schoolClass.color.opacity(0.15), lineWidth: 0.5)
+                    )
+            } else {
+                RoundedRectangle(cornerRadius: AppTheme.cardRadius)
+                    .fill(.clear)
+            }
+        }
+        .glassEffect(.regular.interactive(), in: .rect(cornerRadius: AppTheme.cardRadius))
         .shadow(color: schoolClass.color.opacity(0.12), radius: 8, x: 0, y: 4)
         .scaleEffect(isPressed ? 0.97 : 1.0)
         .animation(AppTheme.bouncy, value: isPressed)
