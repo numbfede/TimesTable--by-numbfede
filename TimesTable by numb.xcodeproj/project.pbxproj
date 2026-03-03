@@ -7,7 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		3FEBEEF72F5720CC009BC608 /* TimeTable+.icon in Resources */ = {isa = PBXBuildFile; fileRef = 3FEBEEF62F5720CC009BC608 /* TimeTable+.icon */; };
+		3FEBEF2B2F572A8C009BC608 /* TimeTable+.icon in Resources */ = {isa = PBXBuildFile; fileRef = 3FEBEF2A2F572A8C009BC608 /* TimeTable+.icon */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -28,7 +28,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		3FEBEEF62F5720CC009BC608 /* TimeTable+.icon */ = {isa = PBXFileReference; lastKnownFileType = folder.iconcomposer.icon; path = "TimeTable+.icon"; sourceTree = "<group>"; };
+		3FEBEF2A2F572A8C009BC608 /* TimeTable+.icon */ = {isa = PBXFileReference; lastKnownFileType = folder.iconcomposer.icon; path = "TimeTable+.icon"; sourceTree = "<group>"; };
 		3FEE738D2F45AE5300F94275 /* TimesTable by numb.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "TimesTable by numb.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		3FEE739E2F45AE5400F94275 /* TimesTable by numbTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "TimesTable by numbTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		3FEE73A82F45AE5400F94275 /* TimesTable by numbUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "TimesTable by numbUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -93,7 +93,7 @@
 		3FEE73842F45AE5300F94275 = {
 			isa = PBXGroup;
 			children = (
-				3FEBEEF62F5720CC009BC608 /* TimeTable+.icon */,
+				3FEBEF2A2F572A8C009BC608 /* TimeTable+.icon */,
 				3FEE738F2F45AE5300F94275 /* TimesTable by numb */,
 				3FEE73A12F45AE5400F94275 /* TimesTable by numbTests */,
 				3FEE73AB2F45AE5400F94275 /* TimesTable by numbUITests */,
@@ -231,7 +231,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				3FEBEEF72F5720CC009BC608 /* TimeTable+.icon in Resources */,
+				3FEBEF2B2F572A8C009BC608 /* TimeTable+.icon in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -299,7 +299,8 @@
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = CCA5TNG9A9;
-				ENABLE_APP_SANDBOX = YES;
+				CODE_SIGN_ENTITLEMENTS = "TimesTable by numb/TimesTable by numb.entitlements";
+                                ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
@@ -347,7 +348,8 @@
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = CCA5TNG9A9;
-				ENABLE_APP_SANDBOX = YES;
+				CODE_SIGN_ENTITLEMENTS = "TimesTable by numb/TimesTable by numb.entitlements";
+                                ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
