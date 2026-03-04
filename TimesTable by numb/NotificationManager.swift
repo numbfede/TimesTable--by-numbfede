@@ -96,11 +96,12 @@ final class NotificationManager: ObservableObject {
 
         print("📅 [NotifManager] Scheduling '\(schoolClass.name)' → weekday \(calWeekday), \(notifHour):\(String(format: "%02d", notifMinute)) (offset -\(offset)min)")
 
-        center.add(request) { error in
+        let className = schoolClass.name
+        center.add(request) { [className] error in
             if let error = error {
                 print("❌ [NotifManager] Failed to add notification: \(error.localizedDescription)")
             } else {
-                print("✅ [NotifManager] Notification scheduled for '\(schoolClass.name)'")
+                print("✅ [NotifManager] Notification scheduled for '\(className)'")
             }
         }
     }
