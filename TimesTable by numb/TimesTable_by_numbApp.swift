@@ -3,6 +3,11 @@ import SwiftData
 
 @main
 struct TimesTableApp: App {
+#if os(iOS)
+    @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
+    @StateObject private var quickActionManager = QuickActionManager.shared
+#endif
+
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
             SchoolClass.self,
@@ -54,6 +59,30 @@ struct TimesTableApp: App {
                         await NotificationManager.shared.checkStatus()
                     }
                 }
+#if os(iOS)
+                .onAppear {
+                    // Set static shortcuts dynamically on every app launch
+                    if UIApplication.shared.shortcutItems?.isEmpty ?? true {
+                        UIApplication.shared.shortcutItems = [
+                            UIApplicationShortcutItem(
+                                type: QuickAction.addClass.rawValue,
+                                localizedTitle: "Nuova Classe",
+                                localizedSubtitle: "Aggiungi al tuo orario",
+                                icon: UIApplicationShortcutIcon(systemImageName: "calendar.badge.plus"),
+                                userInfo: nil
+                            ),
+                            UIApplicationShortcutItem(
+                                type: QuickAction.addTask.rawValue,
+                                localizedTitle: "Nuova Attività",
+                                localizedSubtitle: "Aggiungi compiti o esami",
+                                icon: UIApplicationShortcutIcon(systemImageName: "checklist.unchecked"),
+                                userInfo: nil
+                            )
+                        ]
+                    }
+                }
+                .environmentObject(quickActionManager)
+#endif
                 .modifier(NotificationRescheduler())
         }
         .modelContainer(sharedModelContainer)

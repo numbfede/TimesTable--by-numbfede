@@ -65,6 +65,7 @@ struct ContentView: View {
 
 #if os(iOS)
     @Environment(ThemeManager.self) private var themeManager
+    @EnvironmentObject private var quickActionManager: QuickActionManager
     @State private var currentTab: iOSTab = .home
     @AppStorage("useBottomTabBar") private var useBottomTabBar = true
 
@@ -110,6 +111,16 @@ struct ContentView: View {
         .onReceive(NotificationCenter.default.publisher(for: Notification.Name("NavigateToSettings"))) { _ in
             withAnimation {
                 currentTab = .settings
+            }
+        }
+        .sheet(item: $quickActionManager.action) { action in
+            switch action {
+            case .addClass:
+                AddEditClassView()
+                    .onAppear { currentTab = .home }
+            case .addTask:
+                AddEditTaskView()
+                    .onAppear { currentTab = .tasks }
             }
         }
     }
