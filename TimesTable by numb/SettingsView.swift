@@ -59,6 +59,9 @@ struct SettingsView: View {
     @AppStorage("defaultStartTime") private var defaultStartTime = 480
     @AppStorage("useBottomTabBar") private var useBottomTabBar = true
 
+    @AppStorage("taskNotificationsEnabled") private var taskNotificationsEnabled = true
+    @AppStorage("taskReminderDays") private var taskReminderDays = 5
+
     @AppStorage("hasSeenWelcome") private var hasSeenWelcome = true
     @AppStorage("hasSeenTutorial") private var hasSeenTutorial = true
 
@@ -556,7 +559,9 @@ struct SettingsView: View {
                                 }
                             }
                         } else {
-                            notifManager.removeAllNotifications()
+                            // Can't remove just class notifications easily without tracking tasks.
+                            // But we have removeNotification(for: SchoolClass) inside NotificationManager.
+                            classes.forEach { notifManager.removeNotification(for: $0) }
                         }
                     }
                 if notificationsEnabled {
@@ -583,6 +588,48 @@ struct SettingsView: View {
                 }
             } header: {
                 Label("Notifications", systemImage: "bell.badge.fill")
+            }
+
+            Section {
+                Toggle("Task Reminders", isOn: $taskNotificationsEnabled)
+                    .onChange(of: taskNotificationsEnabled) { _, enabled in
+                        if enabled {
+                            Task {
+                                await notifManager.requestAuthorization()
+                                if notifManager.isAuthorized {
+                                    tasks.forEach { notifManager.scheduleTaskNotifications(for: $0) }
+                                } else {
+                                    taskNotificationsEnabled = false
+                                }
+                            }
+                        } else {
+                            tasks.forEach { notifManager.removeTaskNotification(for: $0) }
+                        }
+                    }
+                if taskNotificationsEnabled {
+                    Stepper(value: $taskReminderDays, in: 1...14) {
+                        HStack {
+                            Text("Notify days before")
+                            Spacer()
+                            Text("\(taskReminderDays) days")
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                    .onChange(of: taskReminderDays) { _, _ in
+                        Task {
+                            if notifManager.isAuthorized {
+                                tasks.forEach { notifManager.scheduleTaskNotifications(for: $0) }
+                            }
+                        }
+                    }
+                    if !notifManager.isAuthorized {
+                        Label("Permission denied. Enable in Settings.", systemImage: "exclamationmark.triangle")
+                            .foregroundStyle(.orange)
+                            .font(.caption)
+                    }
+                }
+            } header: {
+                Label("Tasks & Exams Reminders", systemImage: "checklist")
             }
 
             Section {

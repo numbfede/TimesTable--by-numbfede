@@ -88,13 +88,17 @@ struct TaskListView: View {
                         task.gradeWeight = min(max(weight, 0.0), currentMaxWeight)
                     }
                     task.isCompleted = true
+                    NotificationManager.shared.removeTaskNotification(for: task)
                 }
                 gradeInput = ""
                 weightInput = ""
                 taskToGrade = nil
             }
             Button("Skip") {
-                taskToGrade?.isCompleted = true
+                if let task = taskToGrade {
+                    task.isCompleted = true
+                    NotificationManager.shared.removeTaskNotification(for: task)
+                }
                 gradeInput = ""
                 weightInput = ""
                 taskToGrade = nil
@@ -121,6 +125,7 @@ struct TaskListView: View {
             withAnimation(AppTheme.bouncy) { task.isCompleted = false }
             task.grade = nil
             task.gradeWeight = nil
+            NotificationManager.shared.scheduleTaskNotifications(for: task)
         } else {
             // Show grade input alert
             taskToGrade = task
@@ -189,6 +194,7 @@ struct TaskListViewContent: View {
                             .swipeActions(edge: .trailing) {
                                 Button(role: .destructive) {
                                     withAnimation(AppTheme.smooth) {
+                                        NotificationManager.shared.removeTaskNotification(for: task)
                                         modelContext.delete(task)
                                     }
                                 } label: {
@@ -219,6 +225,7 @@ struct TaskListViewContent: View {
                             .swipeActions(edge: .trailing) {
                                 Button(role: .destructive) {
                                     withAnimation(AppTheme.smooth) {
+                                        NotificationManager.shared.removeTaskNotification(for: task)
                                         modelContext.delete(task)
                                     }
                                 } label: {
@@ -535,6 +542,7 @@ struct AddEditTaskView: View {
                     if let taskToDelete = editingTask {
                         Button(role: .destructive) {
                             withAnimation(AppTheme.smooth) {
+                                NotificationManager.shared.removeTaskNotification(for: taskToDelete)
                                 modelContext.delete(taskToDelete)
                                 dismiss()
                             }
@@ -651,6 +659,7 @@ struct AddEditTaskView: View {
             task.hexColor = selectedColor
             task.linkedClass = linkedClass ?? task.linkedClass
             task.subjectName = selectedSubject
+            NotificationManager.shared.scheduleTaskNotifications(for: task)
         } else {
             let task = StudyTask(
                 title: title,
@@ -661,6 +670,7 @@ struct AddEditTaskView: View {
                 subjectName: selectedSubject
             )
             modelContext.insert(task)
+            NotificationManager.shared.scheduleTaskNotifications(for: task)
         }
         dismiss()
     }

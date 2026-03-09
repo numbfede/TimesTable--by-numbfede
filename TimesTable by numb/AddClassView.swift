@@ -472,7 +472,7 @@ struct AddEditClassView: View {
         }
 
         // Reschedule notifications to include this class
-        NotificationManager.shared.rescheduleAll(classes: allClasses)
+        NotificationManager.shared.rescheduleAll(classes: allClasses, tasks: [])
 
         dismiss()
     }

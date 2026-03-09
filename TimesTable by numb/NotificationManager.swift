@@ -106,16 +106,24 @@ final class NotificationManager: ObservableObject {
         }
     }
 
-    /// Reschedule all notifications (called after class create/edit/delete)
-    func rescheduleAll(classes: [SchoolClass]) {
+    /// Reschedule all notifications (called after create/edit/delete)
+    func rescheduleAll(classes: [SchoolClass], tasks: [StudyTask]) {
         let center = UNUserNotificationCenter.current()
         center.removeAllPendingNotificationRequests()
         
         guard isAuthorized else { return }
-        guard UserDefaults.standard.bool(forKey: "notificationsEnabled") else { return }
+        let defaults = UserDefaults.standard
         
-        for c in classes {
-            scheduleNotification(for: c)
+        if defaults.bool(forKey: "notificationsEnabled") {
+            for c in classes {
+                scheduleNotification(for: c)
+            }
+        }
+        
+        if defaults.bool(forKey: "taskNotificationsEnabled") {
+            for t in tasks {
+                scheduleTaskNotifications(for: t)
+            }
         }
         
         // Debug: print pending count
@@ -127,6 +135,73 @@ final class NotificationManager: ObservableObject {
     func removeNotification(for schoolClass: SchoolClass) {
         UNUserNotificationCenter.current()
             .removePendingNotificationRequests(withIdentifiers: [schoolClass.id.uuidString])
+    }
+
+    func scheduleTaskNotifications(for task: StudyTask) {
+        guard isAuthorized else { return }
+
+        let defaults = UserDefaults.standard
+        guard defaults.bool(forKey: "taskNotificationsEnabled") else { return }
+
+        let center = UNUserNotificationCenter.current()
+        let baseId = task.id.uuidString
+        let idsToRemove = (0...14).map { "\(baseId)-\($0)" }
+        center.removePendingNotificationRequests(withIdentifiers: idsToRemove)
+        
+        guard !task.isCompleted else { return }
+
+        let days = defaults.object(forKey: "taskReminderDays") as? Int ?? 5
+        let cal = Calendar.current
+        
+        for dayOffset in 0...days {
+            guard let notifDate = cal.date(byAdding: .day, value: -dayOffset, to: task.dueDate) else { continue }
+            
+            var components = cal.dateComponents([.year, .month, .day], from: notifDate)
+            components.hour = 8
+            components.minute = 0
+            
+            guard var triggerDate = cal.date(from: components) else { continue }
+            
+            if triggerDate <= Date() {
+                if cal.isDateInToday(triggerDate) {
+                    triggerDate = Date().addingTimeInterval(5)
+                } else {
+                    continue
+                }
+            }
+            
+            let content = UNMutableNotificationContent()
+            if dayOffset == 0 {
+                content.title = String(localized: "Oggi scade: \(task.title)")
+            } else if dayOffset == 1 {
+                content.title = String(localized: "Manca 1 giorno a: \(task.title)")
+            } else {
+                content.title = String(localized: "Mancano \(dayOffset) giorni a: \(task.title)")
+            }
+            if let detail = task.detail, !detail.isEmpty {
+                content.body = detail
+            }
+            content.sound = .default
+            if #available(iOS 15.0, *) {
+                content.interruptionLevel = .timeSensitive
+            }
+            
+            let triggerComponents = cal.dateComponents([.year, .month, .day, .hour, .minute, .second], from: triggerDate)
+            let trigger = UNCalendarNotificationTrigger(dateMatching: triggerComponents, repeats: false)
+            let request = UNNotificationRequest(identifier: "\(baseId)-\(dayOffset)", content: content, trigger: trigger)
+            
+            center.add(request) { error in
+                if let error = error {
+                    print("❌ [NotifManager] Failed to add task notification: \(error.localizedDescription)")
+                }
+            }
+        }
+    }
+
+    func removeTaskNotification(for task: StudyTask) {
+        let baseId = task.id.uuidString
+        let idsToRemove = (0...14).map { "\(baseId)-\($0)" }
+        UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: idsToRemove)
     }
 
     func removeAllNotifications() {

@@ -116,13 +116,14 @@ private func destroyOldStore(schema: Schema) {
 
 struct NotificationRescheduler: ViewModifier {
     @Query private var classes: [SchoolClass]
+    @Query private var tasks: [StudyTask]
     
     func body(content: Content) -> some View {
         content
             .onAppear {
                 // Small delay so the NotificationManager has time to check auth status
                 DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-                    NotificationManager.shared.rescheduleAll(classes: classes)
+                    NotificationManager.shared.rescheduleAll(classes: classes, tasks: tasks)
                 }
             }
     }
